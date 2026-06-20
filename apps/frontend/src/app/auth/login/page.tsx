@@ -97,7 +97,10 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
-            <span className="text-xl font-bold text-neutral-800">AI Franchise</span>
+            <div className="flex flex-col items-center">
+              <span className="text-2xl font-bold text-neutral-800">F3</span>
+              <span className="text-xs text-neutral-500">fintech for franchises</span>
+            </div>
           </Link>
           <h1 className="text-3xl font-bold text-neutral-800 mb-2">Welcome Back</h1>
           <p className="text-neutral-500">Sign in to access your franchise network</p>

@@ -1,14 +1,16 @@
 {
-  "name": "ai-franchise-platform",
+  "name": "f3-fintech-for-franchises",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@11.5.2",
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
     "dev": "turbo run dev",
-    "build": "turbo run build",
+    "build": "npm run build --workspace=apps/backend && npm run build --workspace=apps/frontend && npm run build --workspace=packages/shared",
+    "build:turbo": "turbo run build",
     "start": "turbo run start",
     "lint": "turbo run lint"
   },

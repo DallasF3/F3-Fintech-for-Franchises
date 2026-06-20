@@ -15,7 +15,7 @@ export function About() {
             Engineered for Franchise Operations
           </h2>
           <p className="mt-4 text-[16px] leading-[1.6] text-muted sm:text-[18px]">
-            Deep dive into our analytical models, sync pipeline, and security mechanisms. AI Franchise combines complex overnight data calculations into instant, actionable summaries.
+            Deep dive into our analytical models, sync pipeline, and security mechanisms. F3 combines complex overnight data calculations into instant, actionable summaries.
           </p>
         </Reveal>
       </div>
@@ -37,7 +37,7 @@ export function About() {
             Franchise networks generate enormous amounts of data across point of sale, payments, loyalty and footfall, yet most of it never turns into a decision. 
           </p>
           <p className="text-sm leading-[1.6] text-neutral-500">
-            AI Franchise is the secure intelligence layer that changes that: a single platform that understands every location, giving franchisors immediate guidance on where to intervene and where to expand.
+            F3 is the secure intelligence layer that changes that: a single platform that understands every location, giving franchisors immediate guidance on where to intervene and where to expand.
           </p>
           <div className="mt-2 h-1.5 w-1/3 rounded-full bg-gradient-to-r from-rausch to-indigo-500" />
         </StaggerItem>

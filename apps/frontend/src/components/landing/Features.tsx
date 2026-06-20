@@ -23,7 +23,7 @@ export function Features() {
           One Intelligence Layer, Entire Network
         </h2>
         <p className="mt-4 text-[16px] leading-[1.6] text-muted sm:text-[18px]">
-          AI Franchise sits on top of the systems you already use POS, payments, loyalty, and hardware and translates their data into decisions.
+          F3 sits on top of the systems you already use POS, payments, loyalty, and hardware and translates their data into decisions.
         </p>
       </Reveal>
 

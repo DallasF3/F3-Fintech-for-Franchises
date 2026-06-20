@@ -1,16 +1,16 @@
-# AI-Powered Franchise Intelligence Platform
+# F3: AI-Powered Fintech for Franchises Intelligence Platform
 ## Executive Project Summary & Delivery Blueprint
 
 **Prepared For:** Franchise Brand Stakeholders & Client Review  
 **Date:** June 12, 2026  
 **Status:** Ready for Client Sign-off  
-**Purpose:** This document details the system design, implementation phases, integration methods, software modules, and third-party dependencies of the AI Franchise Intelligence Platform.
+**Purpose:** This document details the system design, implementation phases, integration methods, software modules, and third-party dependencies of the F3: Fintech for Franchises Intelligence Platform.
 
 ---
 
 ## 1. Executive Summary: The Intelligence Layer
 
-The **AI Franchise Intelligence Platform** is a custom software-as-a-service (SaaS) solution designed to serve as a single, unified brain for multi-location franchise operations. 
+The **F3: Fintech for Franchises Intelligence Platform** is a custom software-as-a-service (SaaS) solution designed to serve as a single, unified brain for multi-location franchise operations. 
 
 Modern franchises typically have data scattered across multiple points: point-of-sale (POS) systems, payment gateways, customer loyalty databases, and email/SMS marketing channels. This fragmentation makes it difficult to see network-wide trends.
 

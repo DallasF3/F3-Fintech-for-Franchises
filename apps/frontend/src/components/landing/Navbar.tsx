@@ -73,11 +73,10 @@ export function Navbar() {
     >
       <nav className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-6 sm:px-10">
         
-        {/* Left Section: Brand Title only */}
-        <Link href="/" className="flex items-center hover:opacity-90 transition-opacity">
-          <span className="text-[19px] font-bold tracking-tight text-neutral-400 font-sans">
-            AI Franchise
-          </span>
+        {/* Left Section: Brand Logo and Title */}
+        <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+          <span className="text-[19px] font-bold tracking-tight text-neutral-800 font-sans">F3</span>
+          <span className="text-sm text-neutral-500">fintech for franchises</span>
         </Link>
 
         {/* Middle Section: The Navigation Capsule */}

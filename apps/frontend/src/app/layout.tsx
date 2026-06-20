@@ -8,9 +8,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Franchise OS: The AI Operating System for Franchise Growth",
+  title: "F3: Fintech for Franchises - AI-Powered Franchise Management",
   description:
-    "Turn transaction, payment, and customer data into intelligent business actions. Franchise OS is the AI intelligence layer that helps franchisors and operators predict risk, automate marketing, and grow profitably.",
+    "F3 is fintech for franchises. Turn transaction, payment, and customer data into intelligent business actions. Helps franchisors and operators predict risk, automate marketing, and grow profitably.",
 };
 
 export default function RootLayout({

@@ -1,4 +1,4 @@
-# AI Franchise Intelligence Platform — System Architecture
+# F3: Fintech for Franchises Intelligence Platform — System Architecture
 
 > **Version:** 1.0.0  
 > **Last Updated:** 2026-06-12  
@@ -30,7 +30,7 @@
 
 ## 1. Executive Summary
 
-The **AI Franchise Intelligence Platform** is a SaaS solution that serves as a **unified intelligence layer** for multi-location franchise businesses. It aggregates data from disparate point-of-sale systems, payment processors, CRM/loyalty platforms, and communication channels into a single normalized data warehouse — then applies AI-driven analytics to surface actionable insights across franchise networks.
+The **F3: Fintech for Franchises Intelligence Platform** is a SaaS solution that serves as a **unified intelligence layer** for multi-location franchise businesses. It aggregates data from disparate point-of-sale systems, payment processors, CRM/loyalty platforms, and communication channels into a single normalized data warehouse — then applies AI-driven analytics to surface actionable insights across franchise networks.
 
 The platform does **not** replace existing operational systems. It connects them, normalizes their data, and answers critical business questions:
 

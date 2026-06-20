@@ -146,7 +146,7 @@ Run these commands from the repository root:
     *   Created `DESIGN.md` for Airbnb-style aesthetic.
     *   **Built the marketing landing page** with premium redesigned sections.
     *   **Hero Section Redesign:** Redesigned the Hero section to transition from white to candy-pink, featuring a lower vertical grid pattern, skeuomorphic buttons, and staggered floating glassmorphism dashboard cards. Recently cleaned up copy and removed secondary CTAs.
-    *   **Navbar Redesign:** Adjusted theme to white background, light gray borders/text, removed logo, brand title "AI Franchise". Fixed scroll spy logic so active states correctly highlight in pink, and reordered the Company section before About.
+    *   **Navbar Redesign:** Adjusted theme to white background, light gray borders/text, removed logo, brand title "F3 - fintech for franchises". Fixed scroll spy logic so active states correctly highlight in pink, and reordered the Company section before About.
     *   **About Section Redesign:** Redesigned the About section to feature a Pinterest-style masonry card layout (Framer Motion Stagger animated) with premium SVG dashboards.
     *   **Features (Company) Section Redesign:** Redesigned the Features section to match the Pinterest-style masonry card layout, including premium interactive widgets.
     *   **Legal Pages Generation:** Generated 14 full production-ready legal and policy pages (Privacy Policy, Terms of Service, Cookie Policy, Refund Policy, Acceptable Use, Community Guidelines, Data Retention, Security, Disclaimer, GDPR, CCPA, Data Rights, Contact/Grievance) placed in top-level routes and a `(legal)` route group.
