@@ -143,6 +143,7 @@ This matrix maps **every PRD requirement** to the specific architecture componen
 | §4 Step 2 | Connect CRM/Loyalty | Integration Engine — CRM Connector | API key auth + `integration_configs` | 2 |
 | §4 Step 2 | Connect Payment APIs | Integration Engine — Payment Connector | API credentials (encrypted) + `integration_configs` | 2 |
 | §4 Step 2 | Connect Email/SMS | Integration Engine — SendGrid/Twilio | API key configuration | 5 |
+| §4 Step 2 | Connect Purple WiFi | Integration Engine — Purple Connector | API key + Venue ID configuration | 2 |
 | §4 Step 3 | Secure API authentication | Integration Engine Resilience Layer (§6.2) | Encrypted credential storage, token-based access | 2 |
 | §4 Step 3 | Read-only ingestion | Integration Engine | All connectors use GET-only API calls | 2 |
 | §4 Step 3 | Permission-based scope | RBAC + RLS | `integration_configs` scoped by `franchise_id` + `store_id` | 2 |
@@ -253,7 +254,8 @@ Operational Stab.    5%    ←─→    Operational Stability    5% (Aligned)
 | §11 | Tokenized ID → Customer Profile | Data Normalization | Clover `customer_id` → platform `customers.clover_id` mapping | 2 |
 | §11 | Digital Receipt Capture | Customer Data Acquisition | `customers.email`, `customers.phone` from Clover customer data | 2 |
 | §11 | Loyalty Enrollment | CRM/Loyalty Connector | `customers.loyalty_id`, `customers.loyalty_points`, `customers.loyalty_tier` | 2 |
-| §11 | Customer Profile Structure | `customers` table (§7.1) | All fields mapped: `customer_id`, `name`, `email`, `phone`, `store_id`, `total_spend`, `last_visit_at`, `visit_count` | 2 |
+| §11 | Captive Portal Wi-Fi Login | Customer Data Acquisition | Purple WiFi webhook maps MAC address to email for tracking | 2 |
+| §11 | Customer Profile Structure | `customers` table (§7.1) | All fields mapped: `customer_id`, `name`, `email`, `phone`, `store_id`, `total_spend`, `last_visit_at`, `visit_count`, `dwell_time_avg` | 2 |
 | §11 | Customer Lifecycle Stages | Customer Scoring AI | Segments derived from RFM: New, Active, Loyal, VIP, At Risk, Dormant, Recovered → stored in `ai_scores` | 4 |
 | §11 | AI Customer Health Score™ (0–100) | Customer Scoring (§9.1) | RFM-based scoring: recency, frequency, monetary + engagement. Stored in `ai_scores` with `entity_type = 'customer'` | 4 |
 | §11 | Inactivity Trigger (21 days) | Marketing Automation | `automation_rules` with `trigger = 'customer_inactive'`, `conditions = {daysSinceLastVisit: 21}` | 5 |

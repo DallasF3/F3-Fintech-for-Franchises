@@ -57,6 +57,7 @@ The platform uses a modern, performant, and secure stack tailored for high-speed
 | **Caching / Queue** | Redis + BullMQ | For async job queues (sync tasks, PDF generation, email sends). |
 | **AI Engine** | Anthropic Claude API (Primary) + OpenAI API (Fallback) | Context-injected LLM generation (No heavy Python services or complex RAG). |
 | **Email/SMS** | SendGrid v3 API / Twilio REST API | Campaign and transactional message delivery. |
+| **Footfall Analytics** | Purple WiFi API & Webhooks | Real-time tracking of dwell time, repeat visits, and store footfall. |
 | **Infrastructure** | AWS (EC2/Lightsail, RDS, ElastiCache, S3) | Vercel for frontend hosting. Split environment strategy. |
 
 ---
@@ -145,10 +146,11 @@ The AI Copilot uses structured context injection to evaluate user questions (e.g
 ---
 
 ### Week 2 — Integration Engine
-* **Sprint Goal:** Connect to Clover POS, process payment processor APIs, establish the scheduled sync queues, and build the data import module for manual CSV/Excel integration.
+* **Sprint Goal:** Connect to Clover POS, process payment processor APIs, integrate Purple WiFi for footfall analytics, establish the scheduled sync queues, and build the data import module for manual CSV/Excel integration.
 * **Track A: Integration Connectors & Imports**
   * **Clover POS Connector:** OAuth2 authorization flow, API client with rate-limiting, and endpoints for orders, transactions, customers, and refunds.
   * **Payment Processor Connector:** iAccess Portal integration for settlements, funding, and chargebacks.
+  * **Purple WiFi Connector:** REST API for historical data sync and Webhook receiver for real-time dwell/exit events.
   * **Data Import Module:** UI and backend logic for manual CSV/Excel uploads, field mapping, automated validation, and processing online exports.
 * **Track B: Sync Infrastructure & Normalization**
   * Database migration for normalized data: `transactions`, `customers`, `settlements`, `refunds`.

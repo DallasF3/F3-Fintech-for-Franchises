@@ -98,7 +98,7 @@ Fintech for Franchises transforms transaction, operational, payment, and custome
 
 **Step 2 — System Connections:**
 - Operational Systems: Clover POS (primary), Other POS systems (future)
-- Customer Systems: CRM platforms, Loyalty systems, Email systems, SMS systems
+- Customer Systems: CRM platforms, Loyalty systems, Email systems, SMS systems, Purple WiFi (Captive Portal & Footfall)
 - Payment / Processor Layer: iAccess Portal, Payment processor reporting APIs, Settlement & funding data sources, Chargeback reporting systems
 
 **Step 3 — Data Authorization:**
@@ -212,6 +212,7 @@ Automatically generated daily summary with specific store performance, targets, 
 2. Loyalty Enrollment (name, email, phone, birthday, preferences)
 3. Customer Account Creation (login-based identity)
 4. Payment Token Association (tokenized payment reference only)
+5. Purple WiFi Captive Portal (guest login linking MAC address to email for repeat visit tracking and dwell time)
 
 **Customer Lifecycle Stages:** New → Active → Loyal → VIP → At Risk → Dormant → Recovered
 
@@ -292,7 +293,7 @@ Manage: Users, Roles, Permissions, Billing, Integrations, AI settings
 - Backend: Node.js, Python (AI services)
 - Database: Postgres
 - Warehouse: BigQuery / Snowflake
-- Integrations: Clover API, iAccess / processor APIs, SendGrid, Twilio
+- Integrations: Clover API, iAccess / processor APIs, SendGrid, Twilio, Purple WiFi (REST API & Webhooks)
 - AI: OpenAI API
 - Cloud: AWS
 

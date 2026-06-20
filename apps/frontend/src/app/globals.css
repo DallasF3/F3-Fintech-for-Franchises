@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+/*
+  Design tokens — Airbnb-inspired premium system (see DESIGN.md).
+  White canvas, near-black ink, single Rausch voltage, soft rounded shapes.
+*/
+:root {
+  --background: #ffffff;
+  --foreground: #222222;
+
+  /* Brand */
+  --rausch: #ff385c;
+  --rausch-active: #e00b41;
+  --rausch-soft: #ffe6eb;
+
+  /* Ink scale */
+  --ink: #222222;
+  --body: #3f3f3f;
+  --muted: #6a6a6a;
+  --muted-soft: #929292;
+
+  /* Surfaces */
+  --canvas: #ffffff;
+  --surface-soft: #f7f7f7;
+  --surface-strong: #f2f2f2;
+
+  /* Lines */
+  --hairline: #dddddd;
+  --hairline-soft: #ebebeb;
+
+  --plum: #460479;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-rausch: var(--rausch);
+  --color-rausch-active: var(--rausch-active);
+  --color-rausch-soft: var(--rausch-soft);
+  --color-ink: var(--ink);
+  --color-body: var(--body);
+  --color-muted: var(--muted);
+  --color-muted-soft: var(--muted-soft);
+  --color-canvas: var(--canvas);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-strong: var(--surface-strong);
+  --color-hairline: var(--hairline);
+  --color-hairline-soft: var(--hairline-soft);
+  --color-plum: var(--plum);
+
+  --font-sans: var(--font-inter), -apple-system, system-ui, sans-serif;
+
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+}
+
+* {
+  border-color: var(--hairline-soft);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The single elevation tier from the design system. */
+.elev-1 {
+  box-shadow:
+    rgba(0, 0, 0, 0.02) 0 0 0 1px,
+    rgba(0, 0, 0, 0.04) 0 2px 6px 0,
+    rgba(0, 0, 0, 0.1) 0 4px 18px 0;
+}
+
+.elev-soft {
+  box-shadow:
+    rgba(0, 0, 0, 0.03) 0 1px 2px 0,
+    rgba(0, 0, 0, 0.04) 0 8px 24px -8px;
+}
+
+/* Reduced-motion guard for all the scroll/entrance animation. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float-slow 6s ease-in-out infinite;
+}

@@ -89,9 +89,8 @@ The platform introduces a **non-invasive intelligence layer** that sits above ex
 ┌────────────────────────────────────────────────────────────────┐
 │                     DATA SOURCES                               │
 │  ┌─────────┐  ┌─────────────┐  ┌──────────┐  ┌────────────┐  │
-│  │Clover   │  │Payment APIs │  │CRM/      │  │Email/SMS   │  │
-│  │POS      │  │(Settlements)│  │Loyalty   │  │(SendGrid/  │  │
-│  │         │  │             │  │          │  │ Twilio)    │  │
+│  │Clover   │  │Payment APIs │  │CRM/      │  │Email/SMS & │  │
+│  │POS      │  │(Settlements)│  │Loyalty   │  │Purple WiFi │  │
 │  └────┬────┘  └──────┬──────┘  └────┬─────┘  └─────┬──────┘  │
 │       │              │              │               │          │
 └───────┼──────────────┼──────────────┼───────────────┼──────────┘
@@ -367,6 +366,7 @@ Client (Next.js)
 | **CRM/Loyalty** | CRM REST API | Polling (1 hr) | Contacts, Loyalty Points, Rewards, Segments |
 | **SendGrid** | SendGrid v3 API | Event Webhooks | Campaign Stats, Deliveries, Opens, Clicks |
 | **Twilio** | Twilio REST API | Event Webhooks | SMS Delivery, Responses |
+| **Purple WiFi** | REST API & Webhooks | Real-time + 1 hr | Footfall, Dwell Time, New/Repeat Customers |
 
 ### 6.3 Module 3 — Data Management
 
@@ -671,6 +671,8 @@ The integration layer supports three distinct methods to ingest data, ensuring c
 | Loyalty — Points | Poll | 1 hour | Cache last known | Medium |
 | SendGrid — Events | Webhook | Real-time | Poll daily | Low |
 | Twilio — Events | Webhook | Real-time | Poll daily | Low |
+| Purple WiFi — Dwell | Webhook | Real-time | Poll daily | High |
+| Purple WiFi — Visits| Poll | 1 hour | Full sync daily | High |
 
 ### 8.3 Data Sync Pipeline
 
