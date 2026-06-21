@@ -1,10 +1,11 @@
 {
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
+  "buildCommand": "npm run build --workspace=apps/frontend",
+  "devCommand": "npm run dev --workspace=apps/frontend",
   "installCommand": "npm install --legacy-peer-deps",
   "env": {
     "NODE_ENV": "production"
   },
   "framework": "nextjs",
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "root": "apps/frontend"
 }

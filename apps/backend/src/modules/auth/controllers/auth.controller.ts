@@ -122,7 +122,7 @@ export async function refreshTokenHandler(
       return;
     }
 
-    logger.info('Token refreshed', { userId: user.id });
+    logger.info({ userId: user.id }, 'Token refreshed');
 
     res.status(200).json({
       success: true,
@@ -158,7 +158,7 @@ export async function logoutHandler(
     // Revoke refresh token
     await tokenService.revokeRefreshToken(refreshToken);
 
-    logger.info('User logged out', { token: refreshToken.substring(0, 20) + '...' });
+    logger.info({ token: refreshToken.substring(0, 20) + '...' }, 'User logged out');
 
     res.status(200).json({
       success: true,

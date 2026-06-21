@@ -30,7 +30,7 @@ export async function listUsers(
 
     const users = await query.whereNull('deleted_at');
 
-    logger.info('Users listed', { userId: req.user.userId, count: users.length });
+    logger.info({ userId: req.user.userId, count: users.length }, 'Users listed');
 
     res.status(200).json({
       success: true,
@@ -77,7 +77,7 @@ export async function getUser(
       return;
     }
 
-    logger.info('User viewed', { viewerId: req.user.userId, userId });
+    logger.info({ viewerId: req.user.userId, userId }, 'User viewed');
 
     res.status(200).json({
       success: true,
@@ -138,7 +138,7 @@ export async function updateUser(
       .where('id', userId)
       .first();
 
-    logger.info('User updated', { updaterId: req.user.userId, userId, changes: Object.keys(updateData) });
+    logger.info({ updaterId: req.user.userId, userId, changes: Object.keys(updateData) }, 'User updated');
 
     res.status(200).json({
       success: true,
@@ -198,7 +198,7 @@ export async function deleteUser(
       is_active: false,
     });
 
-    logger.info('User deleted', { deleterId: req.user.userId, userId });
+    logger.info({ deleterId: req.user.userId, userId }, 'User deleted');
 
     res.status(200).json({
       success: true,
