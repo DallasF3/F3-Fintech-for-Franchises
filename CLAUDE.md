@@ -219,9 +219,26 @@ Run these commands from the repository root:
         - Environment variables: `NEXT_PUBLIC_GOOGLE_CLIENT_ID` (frontend), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` (backend)
         - Both frontend and backend TypeScript compile cleanly (0 errors)
         - TODO: Set up actual Google OAuth credentials in GCP Console, test E2E flow
+    - [x] **ID9: RBAC & Authorization** — Role-based middleware & permissions (COMPLETE)
+        - **Permission System:** `src/shared/rbac/permissions.ts` with granular permission matrix
+        - **Role Definitions:** admin, franchisor, franchisee with specific permission sets
+        - **Authorization Middleware:** `requireRole()` and `requirePermission()` for route protection
+        - **User Management API:** Complete CRUD endpoints for `/api/users`
+          - `GET /api/users` — List users (filtered by role)
+          - `GET /api/users/:id` — Get user details (with permission check)
+          - `PUT /api/users/:id` — Update user (first name, last name, role, status)
+          - `DELETE /api/users/:id` — Soft delete user (admin only)
+        - **Franchise Scoping:** Franchisors see only their franchise users, franchisees see only themselves
+        - **Audit Logging:** All RBAC operations logged with user ID and action
+        - **Files Created:**
+          - `src/shared/rbac/permissions.ts` (permission matrix, role helpers)
+          - `src/middlewares/authorize.middleware.ts` (role/permission check middleware)
+          - `src/modules/users/controllers/user.controller.ts` (user CRUD handlers)
+          - `src/modules/users/routes.ts` (endpoints with RBAC protection)
+        - **Integration:** Wired into `src/index.ts` as `/api/users` routes
     - [ ] **ID7: Microsoft OAuth** — OAuth provider integration
     - [ ] **ID8: MFA Implementation** — TOTP setup & verification
-    - [ ] **ID9: RBAC & Authorization** — Role-based middleware & permissions
+    - [ ] **ID5: Password Reset** — Email-based password reset
     - [ ] **ID10: Redis & Queue Setup** — BullMQ for async jobs
     - [x] **ID11: Frontend Auth Pages** — Login, signup, MFA setup, password reset (REDESIGNED)
         - Minimalist form design with clean white background (no complex gradients/patterns)
@@ -730,11 +747,13 @@ This section maps the internal IDs (ID1-ID13) to the Week 1 spec tasks from `doc
 - ✅ ID1: Database Schema & Migrations (+ Supabase)
 - ✅ ID2: Express Backend Core
 - ✅ ID3: Email/Password Auth (Registration + Login)
-- ✅ ID4: Token Refresh & Logout (NEW: complete with token rotation, auto-refresh)
-- ✅ ID11: Frontend Auth Pages (Signup, Login, Dashboard, smooth flow)
+- ✅ ID4: Token Refresh & Logout (token rotation, auto-refresh)
+- ✅ ID9: RBAC & Authorization (permission matrix, role-based access control)
+- ✅ ID11: Frontend Auth Pages (Signup, Login, Dashboard)
 - ✅ B1: Project Scaffolding
 - ✅ B2: Backend Core Stack
 - ✅ B3: Database & Migrations (Supabase PostgreSQL)
+- ✅ **Production Ready:** vercel.json + VERCEL_SETUP.md configured
 
 #### **In Progress**
 - 🟡 ID6: Google OAuth (Backend ready, needs GCP credentials)
@@ -743,9 +762,8 @@ This section maps the internal IDs (ID1-ID13) to the Week 1 spec tasks from `doc
 - ⏳ ID5: Password Reset flow (email-based)
 - ⏳ ID7: Microsoft OAuth
 - ⏳ ID8: MFA/TOTP setup
-- ⏳ ID9: RBAC middleware & permissions
 - ⏳ ID10: BullMQ + Email queue
-- ⏳ ID12: Admin user management UI
+- ⏳ ID12: Admin user management UI (frontend)
 - ⏳ ID13: User invitation system
 
 #### **Estimate for Full Week 1 Completion**
@@ -759,13 +777,14 @@ This section maps the internal IDs (ID1-ID13) to the Week 1 spec tasks from `doc
 
 ### 🚀 Immediate Next Steps (Priority Order)
 
-1. ✅ **ID4 Complete:** Token refresh, logout, dashboard with smooth flow
-2. **ID9 (2-3 hours):** Build RBAC middleware + permission matrix (`requireRole()` decorator)
-3. **ID5 (2-3 hours):** Password reset via email (request + confirm flow)
+1. ✅ **ID4 Complete:** Token refresh, logout, dashboard
+2. ✅ **ID9 Complete:** RBAC middleware, permission matrix, user CRUD endpoints
+3. 🚀 **PRODUCTION READY:** Deploy to Vercel (see VERCEL_SETUP.md)
 4. **ID6 (1-2 hours):** Finish Google OAuth with GCP credentials
-5. **ID12 (2 hours):** Admin user management table (`GET /api/users`, `PUT /api/users/:id`, `DELETE /api/users/:id`)
-6. **ID7 (2-3 hours):** Microsoft OAuth (similar to Google)
-7. **ID8 (3-4 hours):** MFA/TOTP setup (can defer if needed)
+5. **ID5 (2-3 hours):** Password reset via email (request + confirm flow)
+6. **ID12 (2 hours):** Admin user management table UI (frontend)
+7. **ID7 (2-3 hours):** Microsoft OAuth
+8. **ID8 (3-4 hours):** MFA/TOTP setup (can defer if needed)
 
 ---
 
