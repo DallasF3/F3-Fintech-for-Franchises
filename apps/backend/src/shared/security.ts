@@ -76,4 +76,9 @@ export class SecurityService {
   static getClientIpAddress(req: any): string {
     return (
       req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
-      req.headers["x-rea
+      req.headers["x-real-ip"] ||
+      req.socket?.remoteAddress ||
+      "unknown"
+    );
+  }
+}
