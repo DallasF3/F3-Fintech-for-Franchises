@@ -6,6 +6,5 @@
     "NODE_ENV": "production"
   },
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "root": "apps/frontend"
+  "regions": ["iad1"]
 }
