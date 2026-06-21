@@ -57,7 +57,7 @@ export default function LoginPage() {
       }
 
       if (response.data?.requireMfa) {
-        router.push(`/auth/mfa?token=${response.data.mfaToken || ''}`);
+        router.push(`/auth/mfa?token=${(response.data as any).mfaToken || ''}`);
         return;
       }
 
