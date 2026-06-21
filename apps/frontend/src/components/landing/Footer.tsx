@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Logo } from "./Logo";
 
 const COLUMNS = [
   {
@@ -38,10 +37,15 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-5 py-16 sm:px-8">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
-            <Link href="/" className="flex items-center gap-2.5">
-              <Logo />
-              <span className="text-[17px] font-semibold tracking-tight text-ink">
-                Franchise<span className="text-rausch">OS</span>
+            <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+              <span
+                className="text-[32px] leading-none bg-gradient-to-br from-[#ff385c] via-[#e00b41] to-[#b30033] bg-clip-text text-transparent"
+                style={{ fontFamily: "var(--font-pacifico)" }}
+              >
+                F3
+              </span>
+              <span className="text-[11px] font-medium tracking-widest text-neutral-400 uppercase">
+                fintech for franchises
               </span>
             </Link>
             <p className="mt-4 max-w-xs text-[14px] leading-[1.6] text-muted">
