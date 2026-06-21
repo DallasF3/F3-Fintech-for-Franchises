@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 
-export default function GoogleCallbackPage() {
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+function GoogleCallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export default function GoogleCallbackPage() {
           return;
         }
 
-        const response = await fetch("http://localhost:3001/api/auth/google/callback", {
+        const response = await fetch(`${API_URL}/api/auth/google/callback`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code, state }),
@@ -39,7 +41,7 @@ export default function GoogleCallbackPage() {
         localStorage.setItem("accessToken", data.data.accessToken);
         localStorage.setItem("refreshToken", data.data.refreshToken);
         router.push("/dashboard");
-      } catch (err) {
+      } catch {
         setError("Network error. Please try again.");
         setLoading(false);
       }
@@ -77,5 +79,19 @@ export default function GoogleCallbackPage() {
         </motion.div>
       )}
     </div>
+  );
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="w-12 h-12 border-2 border-[#ff385c] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <GoogleCallbackHandler />
+    </Suspense>
   );
 }
