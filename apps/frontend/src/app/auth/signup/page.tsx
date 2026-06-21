@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api-client";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -60,30 +61,30 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          first_name: formData.first_name.trim(),
-          last_name: formData.last_name.trim(),
-          email: formData.email.trim(),
-          password: formData.password,
-        }),
+      const response = await apiClient.register({
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Account creation failed");
-        if (data.code === "EMAIL_ALREADY_EXISTS") {
+      if (!response.success) {
+        setError(response.error || "Account creation failed");
+        if (response.code === "EMAIL_ALREADY_EXISTS") {
           setFieldError({ email: "Email already registered" });
         }
         return;
       }
 
-      localStorage.setItem("accessToken", data.data.accessToken);
-      localStorage.setItem("refreshToken", data.data.refreshToken);
-      router.push("/dashboard");
+      if (response.data) {
+        apiClient.setTokens({
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
+          accessTokenExpiry: 900000,
+          refreshTokenExpiry: 604800000,
+        });
+        router.push("/dashboard");
+      }
     } catch (err) {
       setError("Network error. Please try again.");
     } finally {

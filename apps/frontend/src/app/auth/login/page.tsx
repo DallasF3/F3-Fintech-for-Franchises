@@ -4,6 +4,7 @@ import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { apiClient } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,36 +42,34 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email.trim(),
-          password: formData.password,
-        }),
+      const response = await apiClient.login({
+        email: formData.email.trim(),
+        password: formData.password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          setError("Too many login attempts. Please try again later.");
-        } else if (response.status === 401 || response.status === 403) {
+      if (!response.success) {
+        if (response.code === "ACCOUNT_LOCKED" || response.code === "INVALID_CREDENTIALS") {
           setError("Invalid email or password");
         } else {
-          setError(data.error || "Sign in failed");
+          setError(response.error || "Sign in failed");
         }
         return;
       }
 
-      if (data.data.requireMfa) {
-        router.push(`/auth/mfa?token=${data.data.mfaToken}`);
+      if (response.data?.requireMfa) {
+        router.push(`/auth/mfa?token=${response.data.mfaToken || ''}`);
         return;
       }
 
-      localStorage.setItem("accessToken", data.data.accessToken);
-      localStorage.setItem("refreshToken", data.data.refreshToken);
-      router.push("/dashboard");
+      if (response.data) {
+        apiClient.setTokens({
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
+          accessTokenExpiry: 900000,
+          refreshTokenExpiry: 604800000,
+        });
+        router.push("/dashboard");
+      }
     } catch (err) {
       setError("Network error. Please try again.");
     } finally {
