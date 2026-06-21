@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import { getDatabase } from '@shared/database/connection';
 import { logger } from '@shared/logger';
+import { SecurityService } from '@shared/security';
 import { generateTokenPair, TokenPair } from './token.service';
 import { RegisterRequest, LoginRequest } from '../validators/auth.validator';
 
@@ -43,9 +44,32 @@ async function comparePassword(
 export async function register(data: RegisterRequest): Promise<RegisterResponse> {
   const db = getDatabase();
 
+  // Sanitize and validate inputs
+  const email = SecurityService.sanitizeEmail(data.email);
+  const firstName = SecurityService.sanitizeInput(data.first_name);
+  const lastName = SecurityService.sanitizeInput(data.last_name);
+
+  if (!SecurityService.validateEmail(email)) {
+    throw {
+      status: 400,
+      message: 'Invalid email format',
+      code: 'INVALID_EMAIL',
+    };
+  }
+
+  const passwordValidation = SecurityService.validatePasswordStrength(data.password);
+  if (!passwordValidation.valid) {
+    throw {
+      status: 400,
+      message: 'Password does not meet requirements',
+      code: 'WEAK_PASSWORD',
+      details: passwordValidation.errors,
+    };
+  }
+
   // Check if email already exists
   const existingUser = await db('users')
-    .where('email', data.email.toLowerCase())
+    .where('email', email)
     .first();
 
   if (existingUser) {
@@ -62,10 +86,10 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
   // Create user
   const [userId] = await db('users')
     .insert({
-      email: data.email.toLowerCase(),
+      email,
       password_hash: passwordHash,
-      first_name: data.first_name,
-      last_name: data.last_name,
+      first_name: firstName,
+      last_name: lastName,
       role: 'franchisee',
       is_active: true,
     })
@@ -114,20 +138,30 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
 export async function login(data: LoginRequest): Promise<LoginResponse> {
   const db = getDatabase();
 
+  // Sanitize and validate email
+  const email = SecurityService.sanitizeEmail(data.email);
+  if (!SecurityService.validateEmail(email)) {
+    throw {
+      status: 401,
+      message: 'Invalid email or password',
+      code: 'INVALID_CREDENTIALS',
+    };
+  }
+
   // Find user by email
   const user = await db('users')
-    .where('email', data.email.toLowerCase())
+    .where('email', email)
     .first();
 
   if (!user) {
-    // Log failed attempt for security
+    // Log failed attempt for security (use sanitized email)
     await db('audit_logs').insert({
       action: 'LOGIN_FAILED',
       entity_type: 'auth',
-      details: { email: data.email, reason: 'user_not_found' },
+      details: { email, reason: 'user_not_found' },
     });
 
-    logger.warn({ email: data.email }, 'Login failed: user not found');
+    logger.warn({ email }, 'Login failed: user not found');
 
     throw {
       status: 401,

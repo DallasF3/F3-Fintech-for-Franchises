@@ -169,6 +169,7 @@ Run these commands from the repository root:
         - Navbar.tsx: "Get Yours" button → `/auth/signup` (both desktop and mobile)
     *   Frontend build: ✅ Compiled successfully (TypeScript strict mode, 0 errors)
 *   **Next Task (ID4):** JWT & Token Management — Access/refresh token flows (refresh endpoint, logout/revocation).
+*   Updated `docker-compose.yml` to include PostgreSQL service for local development.
 
 ---
 
