@@ -121,11 +121,8 @@ export default function SignupPage() {
           className="w-full max-w-md"
         >
           {/* Logo */}
-          <Link href="/" className="inline-flex items-center gap-2 mb-8 hover:opacity-70 transition-opacity">
-            <div className="h-8 w-8 rounded-lg bg-[#ff385c] flex items-center justify-center text-white font-bold">
-              F3
-            </div>
-            <span className="text-lg font-bold tracking-tight text-neutral-900">Franchise Intelligence</span>
+          <Link href="/" className="inline-block mb-8 hover:opacity-70 transition-opacity">
+            <span className="text-xl font-semibold text-neutral-900">F3</span>
           </Link>
 
           <h1 className="text-[32px] font-extrabold leading-[1.1] tracking-[-0.03em] text-neutral-900 mb-2">
