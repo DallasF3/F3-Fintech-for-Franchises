@@ -88,7 +88,7 @@ export default function DashboardPage() {
           <motion.div
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-xl font-semibold text-neutral-900"
+            className="text-2xl font-semibold text-neutral-900 font-[cursive]"
           >
             F3
           </motion.div>
