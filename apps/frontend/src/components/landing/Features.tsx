@@ -74,7 +74,7 @@ const textColor = (s: number) => s >= 80 ? "text-emerald-500" : s >= 60 ? "text-
 // ─── Shared card animation ─────────────────────────────────────────────────
 const card = (delay = 0) => ({
   initial: { opacity: 0, y: 28 },
-  whileInView: { opacity: 1, y: 0 } as object,
+  whileInView: { opacity: 1, y: 0 },
   viewport: { once: true, margin: "-60px" },
   transition: { duration: 0.65, delay, ease: EASE },
 });
