@@ -87,16 +87,12 @@ export function Features() {
 
         {/* ── Header ── */}
         <Reveal className="mx-auto max-w-3xl text-center mb-16">
-          <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#ff385c] bg-[#ff385c]/8 border border-[#ff385c]/20 px-3.5 py-1.5 rounded-full mb-5">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#ff385c] animate-pulse" />
-            The Platform
-          </span>
           <h2 className="text-[32px] sm:text-[46px] font-extrabold leading-[1.1] tracking-[-0.03em] text-neutral-900 mt-4">
             The Operating System for<br />
             <span className="text-[#ff385c]">Modern Franchises</span>
           </h2>
           <p className="mt-5 text-[16px] sm:text-[17px] leading-[1.65] text-neutral-500 max-w-2xl mx-auto">
-            F3 sits on top of your POS, payments, and loyalty systems — turning raw data into decisions that protect revenue and accelerate growth across every location.
+            F3 sits on top of your POS, payments, and loyalty systems turning raw data into decisions that protect revenue and accelerate growth across every location.
           </p>
         </Reveal>
 
@@ -110,14 +106,12 @@ export function Features() {
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ff385c]/10 text-[#ff385c] mb-3">
-                  <Gauge size={20} />
-                </div>
+
                 <h3 className="text-[20px] font-bold tracking-tight text-neutral-900">
                   Franchise Health Score™
                 </h3>
                 <p className="mt-1.5 text-[14px] leading-[1.6] text-neutral-500 max-w-md">
-                  One 0–100 score per location, blending 9 weighted signals — revenue growth, foot traffic, refunds, loyalty retention, and chargebacks.
+                  One 0 to 100 score per location, blending 9 weighted signals: revenue growth, foot traffic, refunds, loyalty retention, and chargebacks.
                 </p>
               </div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-lg flex-shrink-0 mt-1">
@@ -166,9 +160,6 @@ export function Features() {
           >
             <div>
               <div className="flex items-center justify-between mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400">
-                  <Sparkles size={18} />
-                </div>
                 <div className="flex items-center gap-1.5">
                   <motion.span
                     animate={{ opacity: [1, 0.3, 1] }}
@@ -195,7 +186,7 @@ export function Features() {
                 <span className="text-[9px] text-neutral-500 ml-2 font-mono">briefing-jun-22.ai</span>
               </div>
               {[
-                { sym: "↑", clr: "text-emerald-400", text: "Austin South +24% — loyalty reactivation working." },
+                { sym: "↑", clr: "text-emerald-400", text: "Austin South +24% loyalty reactivation working." },
                 { sym: "↓", clr: "text-red-400",     text: "Portland Mall below forecast. Act today." },
                 { sym: "⚠", clr: "text-amber-400",   text: "Refund spike at Store #44. Review iAccess data." },
               ].map((line, i) => (
@@ -235,12 +226,9 @@ export function Features() {
             className="bg-white rounded-[24px] border border-neutral-200/80 p-7 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_36px_rgba(0,0,0,0.09)] transition-shadow duration-300 flex flex-col gap-5"
           >
             <div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 mb-3">
-                <TrendingUp size={20} />
-              </div>
               <h3 className="text-[20px] font-bold tracking-tight text-neutral-900">Revenue Forecasting</h3>
               <p className="mt-1.5 text-[14px] leading-[1.6] text-neutral-500">
-                30, 60, and 90-day projections with conservative, expected, and aggressive models — confidence intervals included.
+                30, 60, and 90 day projections with conservative, expected, and aggressive models with confidence intervals included.
               </p>
             </div>
 
@@ -280,26 +268,23 @@ export function Features() {
             className="bg-white rounded-[24px] border border-neutral-200/80 p-7 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_36px_rgba(0,0,0,0.09)] transition-shadow duration-300 flex flex-col gap-5"
           >
             <div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 mb-3">
-                <Shield size={20} />
-              </div>
               <h3 className="text-[20px] font-bold tracking-tight text-neutral-900">Risk Protection</h3>
               <p className="mt-1.5 text-[14px] leading-[1.6] text-neutral-500">
-                Anomaly detection flags refund spikes and chargeback patterns per location — automatic risk scoring with instant alerts.
+                Anomaly detection flags refund spikes and chargeback patterns per location with automatic risk scoring and instant alerts.
               </p>
             </div>
 
             <div className="flex flex-col gap-2.5">
               {[
                 {
-                  loc: "Store #44 — Vegas Strip",
+                  loc: "Store #44 Vegas Strip",
                   msg: "3 refunds in 15 min",
                   dot: "bg-red-500",
                   badge: "text-red-600 bg-red-50 border-red-100",
                   label: "Critical",
                 },
                 {
-                  loc: "Store #12 — Austin South",
+                  loc: "Store #12 Austin South",
                   msg: "Chargeback rate ↑ 2.4%",
                   dot: "bg-amber-400",
                   badge: "text-amber-600 bg-amber-50 border-amber-100",
@@ -354,21 +339,18 @@ export function Features() {
             className="bg-white rounded-[24px] border border-neutral-200/80 p-7 shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_10px_36px_rgba(0,0,0,0.09)] transition-shadow duration-300 flex flex-col gap-5"
           >
             <div>
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ff385c]/10 text-[#ff385c] mb-3">
-                <Megaphone size={20} />
-              </div>
               <h3 className="text-[20px] font-bold tracking-tight text-neutral-900">Campaign Automation</h3>
               <p className="mt-1.5 text-[14px] leading-[1.6] text-neutral-500">
-                Behavior-triggered email, SMS, and coupon campaigns — reactivation, VIP rewards, and birthday flows run automatically.
+                Behavior triggered email, SMS, and coupon campaigns: reactivation, VIP rewards, and birthday flows run automatically.
               </p>
             </div>
 
             {/* Trigger → Action → Result flow */}
             <div className="flex flex-col gap-1">
               {[
-                { step: "Trigger", icon: "⚡", desc: "Customer inactive 14 days",  bg: "bg-amber-50  border-amber-200",   txt: "text-amber-600"  },
-                { step: "Action",  icon: "📱", desc: "SMS + 20% coupon sent",       bg: "bg-blue-50   border-blue-200",    txt: "text-blue-600"   },
-                { step: "Result",  icon: "✓",  desc: "Redeemed within 48 hrs",      bg: "bg-emerald-50 border-emerald-200", txt: "text-emerald-600" },
+                { step: "Trigger", desc: "Customer inactive 14 days",  bg: "bg-amber-50  border-amber-200",   txt: "text-amber-600"  },
+                { step: "Action",  desc: "SMS + 20% coupon sent",       bg: "bg-blue-50   border-blue-200",    txt: "text-blue-600"   },
+                { step: "Result",  desc: "Redeemed within 48 hrs",      bg: "bg-emerald-50 border-emerald-200", txt: "text-emerald-600" },
               ].map((item, i) => (
                 <div key={i} className="flex flex-col">
                   <motion.div
@@ -378,7 +360,6 @@ export function Features() {
                     transition={{ delay: 0.3 + i * 0.14, duration: 0.4, ease: EASE }}
                     className={`flex items-center gap-3 rounded-xl border px-3.5 py-2.5 ${item.bg}`}
                   >
-                    <span className="text-[18px] w-7 text-center flex-shrink-0">{item.icon}</span>
                     <div>
                       <p className={`text-[9px] font-extrabold uppercase tracking-wider ${item.txt}`}>{item.step}</p>
                       <p className="text-[12px] font-semibold text-neutral-800 mt-0.5">{item.desc}</p>

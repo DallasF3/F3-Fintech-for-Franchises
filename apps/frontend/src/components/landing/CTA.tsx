@@ -34,17 +34,6 @@ export function CTA() {
           />
 
           <div className="relative">
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ duration: 0.6, ease: EASE }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-[12px] font-semibold text-white/60 mb-6"
-            >
-              <Zap size={12} className="text-[#ff385c]" />
-              Free to start · No credit card required
-            </motion.div>
 
             {/* Headline */}
             <motion.h2

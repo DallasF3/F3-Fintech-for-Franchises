@@ -81,18 +81,6 @@ export function Hero() {
         {/* ─── LEFT: Copy ─── */}
         <div className="flex-shrink-0 w-full lg:w-[42%] flex flex-col justify-center">
 
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.05, ease: EASE }}
-            className="inline-flex items-center gap-2 self-start rounded-full border border-[#ff385c]/25 bg-[#ff385c]/8 px-3.5 py-1.5 mb-6"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[#ff385c] animate-pulse" />
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-[#ff385c]">
-              AI-Powered Franchise Intelligence
-            </span>
-          </motion.div>
 
           {/* Headline */}
           <motion.h1
@@ -191,7 +179,7 @@ export function Hero() {
             </div>
             <div>
               <p className="text-[11px] font-bold text-neutral-800">Refund Spike Detected</p>
-              <p className="text-[10px] text-neutral-400 mt-0.5">Store #44 — requires review</p>
+              <p className="text-[10px] text-neutral-400 mt-0.5">Store #44 requires review</p>
             </div>
           </motion.div>
 
