@@ -51,3 +51,20 @@ export const LogoutSchema = z.object({
 });
 
 export type LogoutRequest = z.infer<typeof LogoutSchema>;
+
+export const ForgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .email('Invalid email format')
+    .regex(EMAIL_REGEX, 'Invalid email format'),
+});
+
+export type ForgotPasswordRequest = z.infer<typeof ForgotPasswordSchema>;
+
+export const ResetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  password: PASSWORD_SCHEMA,
+});
+
+export type ResetPasswordRequest = z.infer<typeof ResetPasswordSchema>;
+

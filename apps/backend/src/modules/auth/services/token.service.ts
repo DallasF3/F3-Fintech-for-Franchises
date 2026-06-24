@@ -175,3 +175,27 @@ export async function rotateRefreshToken(
   // Generate new pair
   return generateTokenPair(userId, email, role, franchiseId);
 }
+
+/**
+ * Generate a short-lived token solely for MFA verification during login
+ */
+export function generateMfaToken(userId: string): string {
+  return jwt.sign(
+    { userId, isMfaToken: true },
+    JWT_SECRET,
+    { expiresIn: '5m' } as SignOptions
+  );
+}
+
+/**
+ * Verify an MFA token and extract the userId
+ */
+export function verifyMfaToken(token: string): string | null {
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string; isMfaToken: boolean };
+    if (!payload.isMfaToken) return null;
+    return payload.userId;
+  } catch {
+    return null;
+  }
+}

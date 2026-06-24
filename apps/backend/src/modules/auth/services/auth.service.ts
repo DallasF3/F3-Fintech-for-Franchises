@@ -1,9 +1,12 @@
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import { getDatabase } from '@shared/database/connection';
 import { logger } from '@shared/logger';
 import { SecurityService } from '@shared/security';
-import { generateTokenPair, TokenPair } from './token.service';
-import { RegisterRequest, LoginRequest } from '../validators/auth.validator';
+import * as MfaService from './mfa.service';
+import { generateTokenPair, generateMfaToken, verifyMfaToken, TokenPair, revokeRefreshToken } from './token.service';
+import { RegisterRequest, LoginRequest, ForgotPasswordRequest, ResetPasswordRequest } from '../validators/auth.validator';
+import { pushJob } from '@shared/queue';
 
 export interface AuthUser {
   id: string;
@@ -84,7 +87,7 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
   const passwordHash = await hashPassword(data.password);
 
   // Create user
-  const [userId] = await db('users')
+  const [insertResult] = await db('users')
     .insert({
       email,
       password_hash: passwordHash,
@@ -94,6 +97,8 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
       is_active: true,
     })
     .returning('id');
+
+  const userId = typeof insertResult === 'object' && insertResult !== null ? insertResult.id : insertResult;
 
   // Fetch the created user
   const user = await db('users').where('id', userId).first();
@@ -119,6 +124,17 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
   });
 
   logger.info({ userId: user.id, email: user.email }, 'User registered successfully');
+
+  // Push welcome email job to background queue
+  await pushJob('SEND_EMAIL', {
+    to: user.email,
+    subject: 'Welcome to AI Franchise',
+    template: 'welcome',
+    data: { firstName: user.first_name }
+  }).catch(err => {
+    // We catch it so it doesn't fail the registration if queue is down
+    logger.error('Failed to queue welcome email', err);
+  });
 
   return {
     user: {
@@ -208,7 +224,8 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
 
   // Check if MFA is enabled
   if (user.mfa_enabled) {
-    // TODO: Generate MFA token for next step
+    // Generate MFA token for next step
+    const mfaToken = generateMfaToken(user.id);
     logger.info({ userId: user.id }, 'MFA required for login');
 
     return {
@@ -223,7 +240,7 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
         mfa_enabled: user.mfa_enabled,
       },
       requireMfa: true,
-      mfaToken: 'mfa-token-placeholder', // Will be implemented in ID5
+      mfaToken,
     };
   }
 
@@ -278,5 +295,268 @@ export async function getUserById(userId: string): Promise<AuthUser | null> {
     franchise_id: user.franchise_id,
     is_active: user.is_active,
     mfa_enabled: user.mfa_enabled,
+  };
+}
+
+export async function requestPasswordReset(data: ForgotPasswordRequest): Promise<void> {
+  const db = getDatabase();
+  const email = SecurityService.sanitizeEmail(data.email);
+
+  if (!SecurityService.validateEmail(email)) {
+    throw { status: 400, message: 'Invalid email format', code: 'INVALID_EMAIL' };
+  }
+
+  const user = await db('users').where('email', email).first();
+
+  if (!user || !user.is_active) {
+    // Return success to prevent email enumeration
+    return;
+  }
+
+  // Generate a secure random token
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  
+  // Expiry in 1 hour
+  const expiresAt = new Date();
+  expiresAt.setHours(expiresAt.getHours() + 1);
+
+  await db('password_reset_tokens').insert({
+    user_id: user.id,
+    token_hash: tokenHash,
+    expires_at: expiresAt,
+  });
+
+  await db('audit_logs').insert({
+    user_id: user.id,
+    action: 'PASSWORD_RESET_REQUESTED',
+    entity_type: 'user',
+    entity_id: user.id,
+  });
+
+  // Since ID10 (Email Queue) is not implemented yet, log the URL to console
+  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password?token=${token}`;
+  logger.info({ userId: user.id }, `[MOCK EMAIL] Password reset requested. Link: ${resetUrl}`);
+  console.log(`\n\n=== PASSWORD RESET LINK ===\n${resetUrl}\n===========================\n`);
+}
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<void> {
+  const db = getDatabase();
+  
+  const passwordValidation = SecurityService.validatePasswordStrength(data.password);
+  if (!passwordValidation.valid) {
+    throw {
+      status: 400,
+      message: 'Password does not meet requirements',
+      code: 'WEAK_PASSWORD',
+      details: passwordValidation.errors,
+    };
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(data.token).digest('hex');
+
+  // Find valid token
+  const resetToken = await db('password_reset_tokens')
+    .where('token_hash', tokenHash)
+    .whereNull('used_at')
+    .where('expires_at', '>', new Date())
+    .first();
+
+  if (!resetToken) {
+    throw {
+      status: 400,
+      message: 'Invalid or expired password reset link',
+      code: 'INVALID_RESET_TOKEN',
+    };
+  }
+
+  const passwordHash = await hashPassword(data.password);
+
+  // Use a transaction for safety
+  await db.transaction(async (trx) => {
+    // Update user password
+    await trx('users')
+      .where('id', resetToken.user_id)
+      .update({ password_hash: passwordHash });
+
+    // Mark token as used
+    await trx('password_reset_tokens')
+      .where('id', resetToken.id)
+      .update({ used_at: new Date() });
+
+    // Revoke all existing refresh tokens for security
+    await trx('refresh_tokens')
+      .where('user_id', resetToken.user_id)
+      .whereNull('revoked_at')
+      .update({ revoked_at: new Date() });
+
+    // Audit log
+    await trx('audit_logs').insert({
+      user_id: resetToken.user_id,
+      action: 'PASSWORD_RESET_COMPLETED',
+      entity_type: 'user',
+      entity_id: resetToken.user_id,
+    });
+  });
+
+  logger.info({ userId: resetToken.user_id }, 'Password reset successfully');
+}
+
+/**
+ * Generates a new MFA secret and QR code URL for a user
+ */
+export async function setupMfa(userId: string) {
+  const db = getDatabase();
+  
+  // Get user email
+  const user = await db('users').select('email', 'mfa_enabled').where('id', userId).first();
+  
+  if (!user) {
+    throw { status: 404, message: 'User not found', code: 'USER_NOT_FOUND' };
+  }
+  
+  if (user.mfa_enabled) {
+    throw { status: 400, message: 'MFA is already enabled', code: 'MFA_ALREADY_ENABLED' };
+  }
+
+  const { secret, otpauthUrl } = MfaService.generateSecret(user.email);
+
+  // Save temporary secret to DB (do not enable yet)
+  await db('users').where('id', userId).update({
+    mfa_secret: secret
+  });
+
+  return {
+    secret,
+    otpauthUrl
+  };
+}
+
+/**
+ * Confirms MFA setup and generates recovery codes
+ */
+export async function confirmMfa(userId: string, token: string) {
+  const db = getDatabase();
+  
+  const user = await db('users').select('mfa_secret', 'mfa_enabled').where('id', userId).first();
+  
+  if (!user) {
+    throw { status: 404, message: 'User not found', code: 'USER_NOT_FOUND' };
+  }
+
+  if (user.mfa_enabled) {
+    throw { status: 400, message: 'MFA is already enabled', code: 'MFA_ALREADY_ENABLED' };
+  }
+
+  if (!user.mfa_secret) {
+    throw { status: 400, message: 'MFA setup not initiated', code: 'MFA_SETUP_REQUIRED' };
+  }
+
+  // Verify token
+  const isValid = MfaService.verifyToken(token, user.mfa_secret);
+  
+  if (!isValid) {
+    throw { status: 400, message: 'Invalid verification code', code: 'INVALID_MFA_CODE' };
+  }
+
+  // Generate recovery codes
+  const recoveryCodes = MfaService.generateRecoveryCodes();
+
+  // Enable MFA
+  await db('users').where('id', userId).update({
+    mfa_enabled: true,
+    recovery_codes: recoveryCodes
+  });
+
+  // Log audit
+  await db('audit_logs').insert({
+    user_id: userId,
+    action: 'MFA_ENABLED',
+    entity_type: 'auth',
+  });
+
+  return {
+    recoveryCodes
+  };
+}
+
+/**
+ * Verifies MFA during login flow
+ */
+export async function verifyMfaLogin(mfaToken: string, token: string) {
+  const userId = verifyMfaToken(mfaToken);
+  
+  if (!userId) {
+    throw { status: 401, message: 'Invalid or expired MFA token', code: 'INVALID_MFA_TOKEN' };
+  }
+
+  const db = getDatabase();
+  const user = await db('users').where('id', userId).first();
+
+  if (!user || !user.is_active || !user.mfa_enabled || !user.mfa_secret) {
+    throw { status: 401, message: 'Invalid user or MFA state', code: 'INVALID_MFA_STATE' };
+  }
+
+  // Verify TOTP or Recovery Code
+  let isValid = MfaService.verifyToken(token, user.mfa_secret);
+  let usedRecoveryCode = false;
+
+  if (!isValid && user.recovery_codes && user.recovery_codes.length > 0) {
+    // Check if it's a recovery code
+    const codeIndex = user.recovery_codes.indexOf(token);
+    if (codeIndex !== -1) {
+      isValid = true;
+      usedRecoveryCode = true;
+      
+      // Remove used recovery code
+      const newCodes = [...user.recovery_codes];
+      newCodes.splice(codeIndex, 1);
+      
+      await db('users').where('id', userId).update({
+        recovery_codes: newCodes
+      });
+    }
+  }
+
+  if (!isValid) {
+    // Log failed attempt
+    await db('audit_logs').insert({
+      user_id: userId,
+      action: 'LOGIN_FAILED',
+      entity_type: 'auth',
+      details: { reason: 'invalid_mfa_code' },
+    });
+
+    throw { status: 401, message: 'Invalid verification code', code: 'INVALID_MFA_CODE' };
+  }
+
+  // Generate full access tokens
+  const tokens = await generateTokenPair(user.id, user.email, user.role, user.franchise_id);
+
+  // Update last login
+  await db('users').where('id', user.id).update({
+    last_login_at: new Date(),
+  });
+
+  // Log success
+  await db('audit_logs').insert({
+    user_id: user.id,
+    action: 'LOGIN_SUCCESS',
+    entity_type: 'auth',
+    details: { mfa_used: true, recovery_code_used: usedRecoveryCode }
+  });
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      role: user.role,
+      franchise_id: user.franchise_id,
+      is_active: user.is_active,
+      mfa_enabled: user.mfa_enabled,
+    },
+    ...tokens,
   };
 }

@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import pinoHttp from 'pino-http';
 import { initializeDatabase } from '@shared/database/connection';
+import { initQueue } from '@shared/queue';
+import { initEmailWorker } from './workers/email.worker';
 import { logger } from './shared/logger';
 import { errorHandler } from './middlewares/error.middleware';
 import { apiLimiter } from './middlewares/rate-limit.middleware';
@@ -41,6 +43,8 @@ app.use(errorHandler);
 async function start() {
   try {
     await initializeDatabase();
+    await initQueue();
+    await initEmailWorker();
 
     app.listen(port, () => {
       logger.info(`✓ Backend running on http://localhost:${port}`);

@@ -1,9 +1,15 @@
 import type { Knex } from 'knex';
 import * as dotenv from 'dotenv';
 
-dotenv.config({ path: '../../../.env' });
+import path from 'path';
 
+dotenv.config({ path: path.join(__dirname, '../../../../.env') }); // Root .env
 const getDatabaseConnection = () => {
+  // Load environment variables relative to this file's location
+  dotenv.config({ path: path.join(__dirname, '../../../../../.env') }); // Root .env
+  dotenv.config({ path: path.join(__dirname, '../../../../.env'), override: true }); // Backend .env
+  
+  console.log('--- DATABASE_URL ---', process.env.DATABASE_URL);
   // Use DATABASE_URL if available (Supabase, Cloud providers)
   if (process.env.DATABASE_URL) {
     return process.env.DATABASE_URL;

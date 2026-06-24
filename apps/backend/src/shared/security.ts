@@ -1,6 +1,6 @@
 import * as crypto from "crypto";
-import { redisClient } from "./redis";
 
+const csrfStore = new Map<string, { ip: string, expires: number }>();
 const CSRF_TOKEN_EXPIRY = 30 * 60 * 1000; // 30 minutes
 const CSRF_HEADER = "x-csrf-token";
 const CSRF_COOKIE = "csrf-token";
@@ -11,35 +11,31 @@ export class SecurityService {
   }
 
   static async storeCSRFToken(token: string, ipAddress?: string): Promise<void> {
-    const key = `csrf:${token}`;
-    try {
-      if (redisClient) {
-        await redisClient.setex(key, Math.floor(CSRF_TOKEN_EXPIRY / 1000), ipAddress || "");
-      }
-    } catch (error) {
-      console.error("Failed to store CSRF token:", error);
+    const expires = Date.now() + CSRF_TOKEN_EXPIRY;
+    csrfStore.set(token, { ip: ipAddress || "", expires });
+    
+    // Cleanup expired tokens
+    for (const [key, val] of csrfStore.entries()) {
+      if (val.expires < Date.now()) csrfStore.delete(key);
     }
   }
 
   static async verifyCSRFToken(token: string, ipAddress?: string): Promise<boolean> {
-    const key = `csrf:${token}`;
-    try {
-      if (!redisClient) return false;
-
-      const storedIp = await redisClient.get(key);
-      if (!storedIp) return false;
-
-      // IP mismatch warning but allow (some proxies may change IP)
-      if (ipAddress && storedIp !== ipAddress && ipAddress !== "unknown") {
-        console.warn(`CSRF token IP mismatch: ${storedIp} vs ${ipAddress}`);
-      }
-
-      await redisClient.del(key);
-      return true;
-    } catch (error) {
-      console.error("Failed to verify CSRF token:", error);
+    const stored = csrfStore.get(token);
+    if (!stored) return false;
+    
+    if (stored.expires < Date.now()) {
+      csrfStore.delete(token);
       return false;
     }
+
+    const storedIp = stored.ip;
+    if (ipAddress && storedIp !== ipAddress && ipAddress !== "unknown") {
+      console.warn(`CSRF token IP mismatch: ${storedIp} vs ${ipAddress}`);
+    }
+
+    csrfStore.delete(token);
+    return true;
   }
 
   static sanitizeInput(input: string): string {

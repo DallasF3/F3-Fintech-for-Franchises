@@ -21,6 +21,9 @@ interface User {
   first_name: string;
   last_name: string;
   role: string;
+  is_active?: boolean;
+  last_login_at?: string | null;
+  created_at?: string;
 }
 
 class ApiClient {
@@ -169,6 +172,30 @@ class ApiClient {
     });
   }
 
+  async microsoftCallback(data: {
+    code: string;
+    state?: string;
+  }): Promise<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>> {
+    return this.request('/api/auth/microsoft/callback', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async forgotPassword(email: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, password: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request('/api/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  }
+
   setTokens(tokens: AuthTokens) {
     this.saveTokensToStorage(tokens);
   }
@@ -187,6 +214,47 @@ class ApiClient {
 
   clearTokens() {
     this.clearTokensFromStorage();
+  }
+
+  // MFA Endpoints
+  async setupMfa(): Promise<ApiResponse<{ secret: string; otpauthUrl: string }>> {
+    return this.request('/api/auth/mfa/setup', {
+      method: 'POST',
+    });
+  }
+
+  async confirmMfa(token: string): Promise<ApiResponse<{ recoveryCodes: string[] }>> {
+    return this.request('/api/auth/mfa/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  async verifyMfaLogin(mfaToken: string, token: string): Promise<ApiResponse<{ user: User; accessToken: string; refreshToken: string; accessTokenExpiry: number; refreshTokenExpiry: number }>> {
+    return this.request('/api/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ mfaToken, token }),
+    });
+  }
+
+  // User Management Endpoints
+  async getUsers(): Promise<ApiResponse<{ users: User[] }>> {
+    return this.request('/api/users', {
+      method: 'GET',
+    });
+  }
+
+  async updateUser(userId: string, data: Partial<User>): Promise<ApiResponse<{ user: User }>> {
+    return this.request(`/api/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteUser(userId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/api/users/${userId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

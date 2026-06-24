@@ -68,7 +68,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="flex items-center justify-center h-full min-h-[50vh]">
         <motion.div
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
@@ -82,54 +82,32 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100">
-      <nav className="bg-white border-b border-neutral-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <motion.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="text-2xl font-semibold text-neutral-900 font-[cursive]"
-          >
-            F3
-          </motion.div>
-          <motion.button
-            onClick={handleLogout}
-            disabled={logoutLoading}
-            whileHover={{ scale: logoutLoading ? 1 : 1.02 }}
-            whileTap={{ scale: logoutLoading ? 1 : 0.98 }}
-            className="px-4 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-medium hover:bg-red-100 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-          >
-            {logoutLoading ? "Signing out..." : "Sign out"}
-          </motion.button>
-        </div>
-      </nav>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="w-full"
+    >
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
+        >
+          {error}
+        </motion.div>
+      )}
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-7xl mx-auto px-6 py-12"
-      >
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
-          >
-            {error}
-          </motion.div>
-        )}
-
-        <div className="bg-white rounded-xl border border-neutral-200 p-8 shadow-sm mb-8">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
-            <h1 className="text-3xl font-bold text-neutral-900 mb-2">
-              Welcome back!
-            </h1>
-            <p className="text-neutral-600">
-              You're logged in as <span className="font-medium text-neutral-900">{user?.email}</span>
-            </p>
-          </motion.div>
-        </div>
+      <div className="bg-white rounded-xl border border-neutral-200 p-8 shadow-sm mb-8">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+          <h1 className="text-3xl font-bold text-neutral-900 mb-2">
+            Welcome back!
+          </h1>
+          <p className="text-neutral-600">
+            You're logged in as <span className="font-medium text-neutral-900">{user?.email}</span>
+          </p>
+        </motion.div>
+      </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <motion.div
@@ -170,7 +148,7 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-white rounded-xl border border-neutral-200 p-8 shadow-sm"
+          className="bg-white rounded-xl border border-neutral-200 p-8 shadow-sm mt-8"
         >
           <h2 className="text-lg font-semibold text-neutral-900 mb-6">Authentication Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -201,11 +179,10 @@ export default function DashboardPage() {
 
           <div className="mt-8 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
             <p className="text-sm text-emerald-900">
-              ✓ <strong>ID4 Authentication Complete:</strong> Token refresh & logout endpoints are working. Your session is secure and managed by the backend.
+              ✓ <strong>Dashboard Integration Complete:</strong> Ready to integrate additional franchise modules.
             </p>
           </div>
         </motion.div>
-      </motion.div>
-    </div>
+    </motion.div>
   );
 }
