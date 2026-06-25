@@ -98,6 +98,10 @@ Run these commands from the repository root:
 *   **Database:** PostgreSQL on Supabase (free tier: 500MB, managed backups, auto-scaling)
 *   **Connection String:** `postgresql://postgres:***@db.fjsxudqszsobdumamhji.supabase.co:5432/postgres`
 
+#### ✅ **ID12 Automated Integration Testing Complete**
+*   **Status:** Done.
+*   **Note:** We implemented Supertest and Jest, mocking the `pg-boss` queue dependency to prevent ESM errors. `npx jest` executes smoothly.
+
 #### ✅ **ID13 Invitation System Complete**
 *   **Status:** Done.
 *   **Note:** We implemented the invitation system using a secure, hashed token approach. We decided *not* to integrate `Resend` (or any other email provider) for now. Instead, the backend prints out a simulated email link in the development console (terminal) to facilitate testing without requiring actual email sending limits. Admin can invite anyone; Franchisors can invite Franchisees. 
