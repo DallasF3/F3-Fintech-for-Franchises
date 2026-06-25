@@ -135,6 +135,7 @@ class ApiClient {
     password: string;
     first_name: string;
     last_name: string;
+    franchise_name: string;
   }): Promise<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>> {
     return this.request('/api/auth/register', {
       method: 'POST',
@@ -254,6 +255,33 @@ class ApiClient {
   async deleteUser(userId: string): Promise<ApiResponse<{ message: string }>> {
     return this.request(`/api/users/${userId}`, {
       method: 'DELETE',
+    });
+  }
+
+  // Invitation Endpoints
+  async getInvitations(): Promise<ApiResponse<{ invitations: any[] }>> {
+    return this.request('/api/invitations', {
+      method: 'GET',
+    });
+  }
+
+  async inviteUser(data: { email: string; role: string }): Promise<ApiResponse<{ message: string; invitationId: string }>> {
+    return this.request('/api/invitations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async verifyInvitation(token: string): Promise<ApiResponse<{ email: string; role: string; franchise_id: string | null }>> {
+    return this.request(`/api/invitations/verify/${token}`, {
+      method: 'GET',
+    });
+  }
+
+  async acceptInvitation(data: { token: string; first_name: string; last_name: string; password: string }): Promise<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>> {
+    return this.request('/api/invitations/accept', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 }

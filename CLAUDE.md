@@ -97,7 +97,10 @@ Run these commands from the repository root:
 #### ✅ **Supabase Integration Complete**
 *   **Database:** PostgreSQL on Supabase (free tier: 500MB, managed backups, auto-scaling)
 *   **Connection String:** `postgresql://postgres:***@db.fjsxudqszsobdumamhji.supabase.co:5432/postgres`
-*   **Setup Status:** 
+
+#### ✅ **ID13 Invitation System Complete**
+*   **Status:** Done.
+*   **Note:** We implemented the invitation system using a secure, hashed token approach. We decided *not* to integrate `Resend` (or any other email provider) for now. Instead, the backend prints out a simulated email link in the development console (terminal) to facilitate testing without requiring actual email sending limits. Admin can invite anyone; Franchisors can invite Franchisees. 
     - ✅ Root `.env` updated with `DATABASE_URL`
     - ✅ Backend `apps/backend/.env` and `.env.example` created
     - ✅ Knex `knexfile.ts` configured to use `DATABASE_URL` (SSL enabled for production)
@@ -1010,6 +1013,6 @@ npm run dev --workspace=apps/frontend
 
 ### What's Next
 
-**ID9 (Authorization):** Add role-based middleware (`requireRole()`) to protect endpoints
-**ID5 (Password Reset):** Email-based password reset flow
-**ID6 (Google OAuth):** Complete with GCP credentials
+**ID12 (Automated Testing):** Write `jest`/`supertest` suites for user management.
+**ID5 (Password Reset):** Email-based password reset flow (simulated in logs like invites).
+**ID6 (Google OAuth):** Complete with GCP credentials.

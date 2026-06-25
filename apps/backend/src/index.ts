@@ -8,8 +8,9 @@ import { initEmailWorker } from './workers/email.worker';
 import { logger } from './shared/logger';
 import { errorHandler } from './middlewares/error.middleware';
 import { apiLimiter } from './middlewares/rate-limit.middleware';
-import { authRouter } from './modules/auth';
-import usersRouter from './modules/users';
+import authRoutes from './modules/auth/routes';
+import userRoutes from './modules/users/routes';
+import invitationRoutes from './modules/invitations/routes';
 
 dotenv.config();
 
@@ -31,10 +32,13 @@ app.get('/api/health', (req, res) => {
 });
 
 // Auth routes
-app.use('/api/auth', authRouter);
+app.use('/api/auth', authRoutes);
 
 // User management routes (with RBAC)
-app.use('/api/users', usersRouter);
+app.use('/api/users', userRoutes);
+
+// Invitation routes
+app.use('/api/invitations', invitationRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
@@ -56,6 +60,8 @@ async function start() {
   }
 }
 
-start();
+if (process.env.NODE_ENV !== 'test') {
+  start();
+}
 
 export default app;

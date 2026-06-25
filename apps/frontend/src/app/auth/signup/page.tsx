@@ -20,6 +20,7 @@ export default function SignupPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    franchise_name: "",
   });
 
   const validatePassword = (pwd: string): string | null => {
@@ -47,6 +48,8 @@ export default function SignupPage() {
       newFieldErrors.first_name = "First name required";
     if (!formData.last_name.trim())
       newFieldErrors.last_name = "Last name required";
+    if (!formData.franchise_name.trim())
+      newFieldErrors.franchise_name = "Company name required";
     if (!formData.email.trim()) newFieldErrors.email = "Email required";
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newFieldErrors.email = "Valid email required";
@@ -70,6 +73,7 @@ export default function SignupPage() {
         last_name: formData.last_name.trim(),
         email: formData.email.trim(),
         password: formData.password,
+        franchise_name: formData.franchise_name.trim(),
       });
 
       if (!response.success) {
@@ -213,6 +217,30 @@ export default function SignupPage() {
                   </p>
                 )}
               </div>
+            </div>
+
+            <div>
+              <label className="block text-[13px] font-bold text-neutral-800 mb-1.5 uppercase tracking-wider">
+                Company / Franchise Name
+              </label>
+              <input
+                type="text"
+                name="franchise_name"
+                value={formData.franchise_name}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 text-[14px] border rounded-xl transition-all ${
+                  fieldError.franchise_name
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500/20 bg-red-50/50"
+                    : "border-neutral-200 focus:border-[#ff385c] focus:ring-[#ff385c]/20 bg-neutral-50 hover:bg-white focus:bg-white"
+                } focus:outline-none focus:ring-4 text-neutral-900 placeholder-neutral-400`}
+                placeholder="Your Company LLC"
+                disabled={loading}
+              />
+              {fieldError.franchise_name && (
+                <p className="text-[12px] font-medium text-red-600 mt-1.5">
+                  {fieldError.franchise_name}
+                </p>
+              )}
             </div>
 
             <div>

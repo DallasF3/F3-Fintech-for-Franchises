@@ -26,6 +26,11 @@ export const RegisterSchema = z.object({
     .min(1, 'Last name is required')
     .max(100, 'Last name must be 100 characters or less')
     .trim(),
+  franchise_name: z
+    .string()
+    .min(2, 'Company/Franchise name is required')
+    .max(100, 'Company/Franchise name must be 100 characters or less')
+    .trim(),
 });
 
 export type RegisterRequest = z.infer<typeof RegisterSchema>;

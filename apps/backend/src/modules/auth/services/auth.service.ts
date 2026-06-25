@@ -33,7 +33,7 @@ export interface LoginResponse {
 
 const BCRYPT_ROUNDS = 12;
 
-async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
@@ -51,6 +51,8 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
   const email = SecurityService.sanitizeEmail(data.email);
   const firstName = SecurityService.sanitizeInput(data.first_name);
   const lastName = SecurityService.sanitizeInput(data.last_name);
+  // data.franchise_name is required by schema, but handle gracefully if somehow missing in runtime type
+  const franchiseName = SecurityService.sanitizeInput((data as any).franchise_name || `${firstName}'s Franchise`);
 
   if (!SecurityService.validateEmail(email)) {
     throw {
@@ -86,42 +88,57 @@ export async function register(data: RegisterRequest): Promise<RegisterResponse>
   // Hash password
   const passwordHash = await hashPassword(data.password);
 
-  // Create user
-  const [insertResult] = await db('users')
-    .insert({
-      email,
-      password_hash: passwordHash,
-      first_name: firstName,
-      last_name: lastName,
-      role: 'franchisee',
-      is_active: true,
-    })
-    .returning('id');
+  let user: any;
 
-  const userId = typeof insertResult === 'object' && insertResult !== null ? insertResult.id : insertResult;
+  // Execute workspace creation in a transaction
+  await db.transaction(async (trx) => {
+    // 1. Create Franchise
+    const [franchiseResult] = await trx('franchises')
+      .insert({
+        name: franchiseName,
+      })
+      .returning('id');
+      
+    const franchiseId = typeof franchiseResult === 'object' && franchiseResult !== null ? franchiseResult.id : franchiseResult;
 
-  // Fetch the created user
-  const user = await db('users').where('id', userId).first();
+    // 2. Create user as franchisor
+    const [insertResult] = await trx('users')
+      .insert({
+        email,
+        password_hash: passwordHash,
+        first_name: firstName,
+        last_name: lastName,
+        role: 'franchisor',
+        franchise_id: franchiseId,
+        is_active: true,
+      })
+      .returning('id');
 
-  if (!user) {
-    throw {
-      status: 500,
-      message: 'Failed to create user',
-      code: 'USER_CREATION_FAILED',
-    };
-  }
+    const userId = typeof insertResult === 'object' && insertResult !== null ? insertResult.id : insertResult;
 
-  // Generate tokens
-  const tokens = await generateTokenPair(user.id, user.email, user.role, user.franchise_id);
+    // Fetch the created user
+    user = await trx('users').where('id', userId).first();
 
-  // Create audit log
-  await db('audit_logs').insert({
-    user_id: user.id,
-    action: 'USER_REGISTRATION',
-    entity_type: 'user',
-    entity_id: user.id,
-    details: { email: user.email },
+    if (!user) {
+      throw {
+        status: 500,
+        message: 'Failed to create user',
+        code: 'USER_CREATION_FAILED',
+      };
+    }
+
+    // Create audit log
+    await trx('audit_logs').insert({
+      user_id: user.id,
+      action: 'USER_REGISTRATION',
+      entity_type: 'user',
+      entity_id: user.id,
+      details: { email: user.email, franchise_id: franchiseId },
+    });
   });
+
+  // Generate tokens (done outside transaction to avoid blocking DB pool)
+  const tokens = await generateTokenPair(user.id, user.email, user.role, user.franchise_id);
 
   logger.info({ userId: user.id, email: user.email }, 'User registered successfully');
 

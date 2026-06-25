@@ -22,9 +22,13 @@ export async function listUsers(
     let query = db('users').select('id', 'email', 'first_name', 'last_name', 'role', 'franchise_id', 'is_active', 'created_at');
 
     // Filter by user's access level
-    if (userRole === UserRole.FRANCHISOR && franchiseId) {
+    if (userRole === UserRole.ADMIN) {
+      // Admin sees everyone (no filter applied)
+    } else if (userRole === UserRole.FRANCHISOR && franchiseId) {
+      // Franchisor sees everyone in their franchise
       query = query.where('franchise_id', franchiseId);
-    } else if (userRole === UserRole.FRANCHISEE && franchiseId) {
+    } else {
+      // Franchisee (or Franchisor with no franchise yet) only sees themselves
       query = query.where('id', req.user.userId);
     }
 
