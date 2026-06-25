@@ -15,7 +15,7 @@ interface AuthTokens {
   refreshTokenExpiry: number;
 }
 
-interface User {
+export interface User {
   id: string;
   email: string;
   first_name: string;

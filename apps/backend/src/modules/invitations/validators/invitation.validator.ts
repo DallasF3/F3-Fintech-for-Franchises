@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const CreateInviteSchema = z.object({
   email: z.string().email('Invalid email address').trim().toLowerCase(),
   role: z.enum(['admin', 'franchisor', 'franchisee'], {
-    required_error: 'Role is required',
+    message: 'Role is required and must be valid',
   }),
 });
 
