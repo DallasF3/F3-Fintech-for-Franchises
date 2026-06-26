@@ -11,7 +11,8 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  Blocks
 } from "lucide-react";
 import { apiClient } from "@/lib/api-client";
 
@@ -23,6 +24,7 @@ interface User {
 
 const navItems = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Integrations", href: "/dashboard/integrations", icon: Blocks },
   { name: "Team & Users", href: "/dashboard/users", icon: Users },
   { name: "Security", href: "/dashboard/security", icon: ShieldCheck },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },

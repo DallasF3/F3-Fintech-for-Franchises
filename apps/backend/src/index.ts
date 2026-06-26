@@ -11,6 +11,7 @@ import { apiLimiter } from './middlewares/rate-limit.middleware';
 import authRoutes from './modules/auth/routes';
 import userRoutes from './modules/users/routes';
 import invitationRoutes from './modules/invitations/routes';
+import integrationRoutes from './modules/integration/routes';
 
 dotenv.config();
 
@@ -39,6 +40,9 @@ app.use('/api/users', userRoutes);
 
 // Invitation routes
 app.use('/api/invitations', invitationRoutes);
+
+// Integration routes
+app.use('/api/integrations', integrationRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

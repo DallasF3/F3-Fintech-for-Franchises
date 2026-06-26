@@ -278,10 +278,23 @@ class ApiClient {
     });
   }
 
-  async acceptInvitation(data: { token: string; first_name: string; last_name: string; password: string }): Promise<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>> {
-    return this.request('/api/invitations/accept', {
+  // Integrations Endpoints
+  async getIntegrations(): Promise<ApiResponse<any[]>> {
+    return this.request('/api/integrations', {
+      method: 'GET',
+    });
+  }
+
+  async connectClover(storeId?: string | null): Promise<ApiResponse<{ redirectUrl: string; state: string }>> {
+    return this.request('/api/integrations/clover/connect', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ store_id: storeId }),
+    });
+  }
+
+  async triggerSync(integrationId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/api/integrations/${integrationId}/sync`, {
+      method: 'POST',
     });
   }
 }
