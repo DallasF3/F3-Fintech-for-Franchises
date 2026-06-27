@@ -44,8 +44,10 @@ export class IntegrationController {
 
       res.json({
         success: true,
-        redirectUrl: authorizationUrl,
-        state,
+        data: {
+          redirectUrl: authorizationUrl,
+          state,
+        },
         message: 'Redirect the merchant to this URL to authorize Clover access.',
       });
     } catch (error: any) {
@@ -129,9 +131,9 @@ export class IntegrationController {
       let accessToken: string;
       const appId = process.env.CLOVER_APP_ID;
 
-      if (!appId) {
-        // No Clover credentials configured — simulate for testing
-        console.log('⚠️  CLOVER_APP_ID not set. Simulating token exchange for dev testing.');
+      if (!appId || code.startsWith('mock_')) {
+        // No Clover credentials configured or mock code used — simulate for testing
+        console.log('⚠️  Simulating token exchange for dev/test code.');
         accessToken = `simulated-token-${Date.now()}`;
       } else {
         const tokenResponse = await CloverOAuthService.exchangeCodeForToken(code);

@@ -29,12 +29,11 @@ export default function SetupIntegrationPage() {
           setError(response.error || 'Failed to connect Clover POS');
         }
       } else if (id === 'crm') {
-        // CRM simulation endpoint
-        const res = await fetch('http://localhost:3001/api/integrations/crm/connect', { method: 'POST' });
-        if (res.ok) {
+        const response = await apiClient.connectCrm();
+        if (response.success) {
           window.location.href = '/dashboard/integrations?connected=crm';
         } else {
-          setError('Failed to connect CRM');
+          setError(response.error || 'Failed to connect CRM');
         }
       }
     } catch (err: any) {

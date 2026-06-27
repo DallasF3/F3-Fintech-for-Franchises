@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -21,7 +21,7 @@ const SUPPORTED_INTEGRATIONS = [
   { type: 'crm', name: 'Universal CRM', category: 'Customer Data & Loyalty' },
 ];
 
-export default function IntegrationsDashboard() {
+function IntegrationsDashboardContent() {
   const searchParams = useSearchParams();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -199,5 +199,17 @@ export default function IntegrationsDashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function IntegrationsDashboard() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 max-w-5xl mx-auto flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-[#ff385c]" />
+      </div>
+    }>
+      <IntegrationsDashboardContent />
+    </Suspense>
   );
 }

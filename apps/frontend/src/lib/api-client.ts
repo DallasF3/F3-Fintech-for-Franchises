@@ -278,6 +278,18 @@ class ApiClient {
     });
   }
 
+  async acceptInvitation(data: {
+    token: string;
+    first_name: string;
+    last_name: string;
+    password?: string;
+  }): Promise<ApiResponse<{ user: User; accessToken: string; refreshToken: string }>> {
+    return this.request('/api/invitations/accept', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Integrations Endpoints
   async getIntegrations(): Promise<ApiResponse<any[]>> {
     return this.request('/api/integrations', {
@@ -289,6 +301,12 @@ class ApiClient {
     return this.request('/api/integrations/clover/connect', {
       method: 'POST',
       body: JSON.stringify({ store_id: storeId }),
+    });
+  }
+
+  async connectCrm(): Promise<ApiResponse<any>> {
+    return this.request('/api/integrations/crm/connect', {
+      method: 'POST',
     });
   }
 
