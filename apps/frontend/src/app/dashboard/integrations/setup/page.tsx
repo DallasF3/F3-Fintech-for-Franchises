@@ -23,8 +23,9 @@ export default function SetupIntegrationPage() {
     try {
       if (id === 'clover') {
         const response = await apiClient.connectClover();
-        if (response.success && response.data?.redirectUrl) {
-          window.location.href = response.data.redirectUrl;
+        const redirectUrl = response.data?.redirectUrl || (response as any).redirectUrl;
+        if (response.success && redirectUrl) {
+          window.location.href = redirectUrl;
         } else {
           setError(response.error || 'Failed to connect Clover POS');
         }
