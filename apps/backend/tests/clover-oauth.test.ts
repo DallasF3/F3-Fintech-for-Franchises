@@ -48,8 +48,8 @@ describe('Clover OAuth2 Endpoints', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.redirectUrl).toBeDefined();
-      expect(res.body.state).toBeDefined();
+      expect(res.body.data.redirectUrl).toBeDefined();
+      expect(res.body.data.state).toBeDefined();
     });
   });
 

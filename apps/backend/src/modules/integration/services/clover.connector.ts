@@ -139,14 +139,14 @@ export class CloverConnector implements IConnector {
             .where({ franchise_id: config.franchise_id, clover_id: rawCustomer.id })
             .first();
 
+          await db('customers')
+            .insert(normalized)
+            .onConflict(['franchise_id', 'clover_id'])
+            .merge();
+
           if (existing) {
-            await db('customers').where({ id: existing.id }).update({
-              ...normalized,
-              updated_at: new Date()
-            });
             result.recordsUpdated++;
           } else {
-            await db('customers').insert(normalized);
             result.recordsCreated++;
           }
           result.recordsFetched++;
@@ -184,20 +184,20 @@ export class CloverConnector implements IConnector {
             storeId = firstStore.id;
           }
 
-          const normalized = CloverNormalizer.normalizeTransaction(rawPayment, storeId, dbCustomerId);
+          const normalized = CloverNormalizer.normalizeTransaction(rawPayment, storeId!, dbCustomerId);
 
           const existing = await db('transactions')
             .where({ store_id: storeId, clover_id: rawPayment.id })
             .first();
 
+          await db('transactions')
+            .insert(normalized)
+            .onConflict(['store_id', 'clover_id'])
+            .merge();
+
           if (existing) {
-            await db('transactions').where({ id: existing.id }).update({
-              ...normalized,
-              updated_at: new Date()
-            });
             result.recordsUpdated++;
           } else {
-            await db('transactions').insert(normalized);
             result.recordsCreated++;
           }
           result.recordsFetched++;
@@ -235,20 +235,20 @@ export class CloverConnector implements IConnector {
             throw new Error(`Transaction with Clover ID ${paymentCloverId} not found in DB. Cannot sync refund.`);
           }
 
-          const normalized = CloverNormalizer.normalizeRefund(rawRefund, dbTx.id, storeId, dbTx.customer_id);
+          const normalized = CloverNormalizer.normalizeRefund(rawRefund, dbTx.id, storeId!, dbTx.customer_id);
 
           const existing = await db('refunds')
             .where({ store_id: storeId, clover_id: rawRefund.id })
             .first();
 
+          await db('refunds')
+            .insert(normalized)
+            .onConflict(['store_id', 'clover_id'])
+            .merge();
+
           if (existing) {
-            await db('refunds').where({ id: existing.id }).update({
-              ...normalized,
-              updated_at: new Date()
-            });
             result.recordsUpdated++;
           } else {
-            await db('refunds').insert(normalized);
             result.recordsCreated++;
           }
           result.recordsFetched++;

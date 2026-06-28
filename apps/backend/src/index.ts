@@ -4,6 +4,10 @@ import cors from 'cors';
 import pinoHttp from 'pino-http';
 import { initializeDatabase } from '@shared/database/connection';
 import { initQueue } from '@shared/queue';
+import { initializeSyncWorker } from './modules/integration/queue/sync.worker';
+import { initializeSyncScheduler } from './modules/integration/queue/sync.scheduler';
+import { initializeWebhookWorker } from './modules/integration/queue/webhook.worker';
+import { initializeDlqWorker } from './modules/integration/queue/dlq.worker';
 import { initEmailWorker } from './workers/email.worker';
 import { logger } from './shared/logger';
 import { errorHandler } from './middlewares/error.middleware';
@@ -52,6 +56,10 @@ async function start() {
   try {
     await initializeDatabase();
     await initQueue();
+    await initializeSyncWorker();
+    await initializeSyncScheduler();
+    await initializeDlqWorker();
+    await initializeWebhookWorker();
     await initEmailWorker();
 
     app.listen(port, () => {

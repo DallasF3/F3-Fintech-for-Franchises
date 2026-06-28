@@ -66,10 +66,10 @@ Run these commands from the repository root:
     *   [ ] RBAC middleware & PostgreSQL RLS policies.
     *   [ ] Staging environment configuration & deployment.
 *   [ ] **Week 2 — Integration Engine:**
-    *   [ ] Clover POS connector (OAuth, polling, webhooks).
-    *   [ ] iAccess payment processor connector (settlements, chargebacks).
+    *   [x] Clover POS connector (OAuth, polling, webhooks).
+    *   [x] iAccess payment processor connector (settlements, chargebacks).
     *   [ ] Purple WiFi connector (API & Webhooks) for footfall analytics.
-    *   [ ] CRM/loyalty sync engine.
+    *   [x] CRM/loyalty sync engine.
     *   [ ] Sync queue (BullMQ), exponential retries, and Dead Letter Queue (DLQ).
     *   [ ] Integration manager dashboard UI.
 *   [ ] **Week 3 — Dashboards & Analytics:**
@@ -94,18 +94,20 @@ Run these commands from the repository root:
 
 ### Current State
 
-#### ✅ **Week 2 Integration Engine (Day 6-8) Initialized**
-*   **Database:** Created `003_integration_tables` migration with schema for `integration_configs`, `customers`, `transactions`, `settlements`, `refunds`, `sync_runs`, and `webhook_events`. RLS policies applied.
+#### ✅ **Week 2 Integration Engine (Day 6-8) Initialized & Ingestion Completed**
+*   **Database:** Created `003_integration_tables`, `004_add_clover_unique_constraints`, and `005_add_settlements_unique_constraint` migrations with schemas and unique constraints for `integration_configs`, `customers`, `transactions`, `settlements`, `refunds`, `sync_runs`, and `webhook_events`. RLS policies applied.
 *   **Clover POS OAuth2 Integration (A1.1–A1.2):** Fully complete and verified. Added Clover Sandbox Credentials (`TTREXT0V5SK3C`, client secret configured) to both backend and root `.env` files.
 *   **Connectors:**
-    *   Implemented `clover.connector.ts` skeleton (OAuth, rate-limiting, fetchers).
+    *   Implemented `clover.connector.ts` with atomic `.onConflict().merge()` upserts (OAuth, rate-limiting, paginated customer, transaction, and refund sync).
     *   Implemented `clover.normalizer.ts` (amount, date, status normalization).
-    *   Implemented `payment.connector.ts` skeleton.
+    *   Implemented `crm.connector.ts` with paginated contact fetcher and automated customer email/phone matching/deduplication logic.
+    *   Implemented `payment.connector.ts` with paginated settlements sync, dispute/chargeback tracking, and transaction linkage resolution.
+    *   Implemented `payment.normalizer.ts` (gross/net/fee calculations, status maps).
 *   **Queue/Sync:** Implemented `sync-scheduler.ts` skeleton. Fixed TS compiler error by removing unused `bullmq` import.
-*   **Webhooks:** Implemented `webhook-receiver.ts` and `/api/webhooks/clover` endpoint.
-*   **API:** Built `integration.controller.ts`, mapped endpoints in `integration/routes.ts`, and wired them into `index.ts`.
+*   **Webhooks:** Implemented `webhook-receiver.ts` with signature validation and event parsing, and `/api/webhooks/clover` endpoint.
+*   **API:** Built `integration.controller.ts` with automatic verification code challenge handling, mapped endpoints in `integration/routes.ts`, and wired them into `index.ts`.
 *   **Frontend UI Wiring:** Added helper endpoints to `api-client.ts`, updated `setup/page.tsx` to handle live connections, and updated `integrations/page.tsx` to pull connected configurations dynamically from the database and handle manual syncs.
-*   **Data Normalization:** Fixed compile error in `crm.normalizer.ts` where `normalizeString` didn't accept `null` types.
+*   **Data Normalization & Verification:** Resolved mock database query order constraints in `tests/clover-sync.test.ts` and fixed typing errors so that the full `clover-sync.test.ts`, `clover-oauth.test.ts`, `crm-sync.test.ts`, and `payment-sync.test.ts` suites compile and pass successfully.
 #### ✅ **Supabase Integration Complete**
 *   **Database:** PostgreSQL on Supabase (free tier: 500MB, managed backups, auto-scaling)
 *   **Connection String:** `postgresql://postgres:***@db.fjsxudqszsobdumamhji.supabase.co:5432/postgres`

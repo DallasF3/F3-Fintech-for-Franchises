@@ -8,18 +8,40 @@ import { getDatabase } from '../src/shared/database/connection';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// Mock database connection
 jest.mock('../src/shared/database/connection', () => {
-  const mockKnex = jest.fn().mockReturnValue({
-    where: jest.fn().mockReturnThis(),
-    first: jest.fn().mockResolvedValue(null), // Default to record not existing (insert flow)
-    insert: jest.fn().mockResolvedValue([1]),
+  let transactionQueryCount = 0;
+  const queryBuilder: any = {
+    _tableName: '',
+    _whereArgs: null,
+    where: jest.fn().mockImplementation(function(this: any, args: any) {
+      this._whereArgs = args;
+      return this;
+    }),
+    first: jest.fn().mockImplementation(function(this: any) {
+      if (this._tableName === 'transactions' && this._whereArgs?.clover_id === 'P1') {
+        transactionQueryCount++;
+        if (transactionQueryCount > 1) {
+          return Promise.resolve({ id: 'P1_DB', customer_id: 'C1_DB' });
+        }
+      }
+      return Promise.resolve(null);
+    }),
+    insert: jest.fn().mockReturnThis(),
+    onConflict: jest.fn().mockReturnThis(),
+    merge: jest.fn().mockResolvedValue([1]),
     update: jest.fn().mockResolvedValue(1),
     andWhere: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
+  };
+  const mockKnex = jest.fn().mockImplementation((tableName: string) => {
+    queryBuilder._tableName = tableName;
+    return queryBuilder;
   });
   return {
-    getDatabase: () => mockKnex,
+    getDatabase: () => {
+      transactionQueryCount = 0;
+      return mockKnex;
+    },
   };
 });
 
@@ -132,13 +154,6 @@ describe('Clover POS Connector Ingestion & Sync', () => {
     mockedAxios.create.mockReturnValue(mockAxiosInstance);
 
     const db = getDatabase();
-    // Configure DB mocks specifically for this test
-    const mockFirst = jest.fn()
-      .mockResolvedValueOnce(null) // Customer does not exist -> Insert
-      .mockResolvedValueOnce(null) // Transaction does not exist -> Insert
-      .mockResolvedValueOnce({ id: 'P1_DB', customer_id: 'C1_DB' }) // Payment lookup for refund -> Found
-      .mockResolvedValueOnce(null); // Refund does not exist -> Insert
-    db().first = mockFirst;
 
     const result = await cloverConnector.fullSync(mockConfig, { batchSize: 100 });
 

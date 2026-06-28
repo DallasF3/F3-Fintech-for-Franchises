@@ -7,6 +7,7 @@ const router = Router();
 // ─── OAuth Flows (Protected — requires JWT) ─────────────────
 router.post('/clover/connect', authenticateToken, integrationController.connectClover);
 router.post('/crm/connect', authenticateToken, integrationController.connectCrm);
+router.post('/payment/connect', authenticateToken, integrationController.connectPayment);
 
 // ─── Clover OAuth Callback (Open — browser redirect from Clover) ─
 router.get('/clover/callback', integrationController.cloverCallback);

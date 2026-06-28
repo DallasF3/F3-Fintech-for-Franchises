@@ -36,6 +36,13 @@ export default function SetupIntegrationPage() {
         } else {
           setError(response.error || 'Failed to connect CRM');
         }
+      } else if (id === 'payment') {
+        const response = await apiClient.connectPayment();
+        if (response.success) {
+          window.location.href = '/dashboard/integrations?connected=payment';
+        } else {
+          setError(response.error || 'Failed to connect Payments');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred.');

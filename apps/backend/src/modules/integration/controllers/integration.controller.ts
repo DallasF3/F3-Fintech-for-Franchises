@@ -3,6 +3,8 @@ import { cloverConnector } from '../services/clover.connector';
 import { webhookReceiver } from '../services/webhook-receiver';
 import { CloverOAuthService } from '../services/clover-oauth.service';
 import { AuthenticatedRequest } from '../../../middlewares/authenticate.middleware';
+import { getDatabase } from '../../../shared/database/connection';
+
 
 export class IntegrationController {
 
@@ -216,30 +218,180 @@ export class IntegrationController {
    * POST /api/integrations/crm/connect
    */
   public async connectCrm(req: AuthenticatedRequest, res: Response) {
-    // TODO: Implement CRM connection flow (API key based)
-    res.json({
-      success: true,
-      message: 'Universal CRM connected successfully',
-    });
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const franchiseId = user.franchiseId;
+      if (!franchiseId) {
+        return res.status(400).json({ success: false, error: 'User is not associated with a franchise' });
+      }
+
+      const db = getDatabase();
+
+      // Check if config already exists
+      const existing = await db('integration_configs')
+        .where({ franchise_id: franchiseId, type: 'crm' })
+        .first();
+
+      if (existing) {
+        await db('integration_configs')
+          .where({ id: existing.id })
+          .update({
+            status: 'connected',
+            credentials: JSON.stringify({ api_key: 'mock-dev-crm-api-key' }),
+            settings: JSON.stringify({ api_url: 'https://api.universal-crm.example.com/v1' }),
+            last_error: null,
+            error_count: 0,
+            updated_at: new Date(),
+          });
+      } else {
+        await db('integration_configs').insert({
+          franchise_id: franchiseId,
+          type: 'crm',
+          status: 'connected',
+          credentials: JSON.stringify({ api_key: 'mock-dev-crm-api-key' }),
+          settings: JSON.stringify({ api_url: 'https://api.universal-crm.example.com/v1' }),
+          error_count: 0,
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Universal CRM connected successfully',
+      });
+    } catch (error: any) {
+      console.error('CRM connect error:', error.message);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to connect CRM',
+      });
+    }
+  }
+
+  /**
+   * POST /api/integrations/payment/connect
+   */
+  public async connectPayment(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const franchiseId = user.franchiseId;
+      if (!franchiseId) {
+        return res.status(400).json({ success: false, error: 'User is not associated with a franchise' });
+      }
+
+      const db = getDatabase();
+
+      // Check if config already exists
+      const existing = await db('integration_configs')
+        .where({ franchise_id: franchiseId, type: 'payment' })
+        .first();
+
+      if (existing) {
+        await db('integration_configs')
+          .where({ id: existing.id })
+          .update({
+            status: 'connected',
+            credentials: JSON.stringify({ api_key: 'mock-dev-payment-api-key' }),
+            settings: JSON.stringify({ provider: 'iAccess' }),
+            last_error: null,
+            error_count: 0,
+            updated_at: new Date(),
+          });
+      } else {
+        await db('integration_configs').insert({
+          franchise_id: franchiseId,
+          type: 'payment',
+          status: 'connected',
+          credentials: JSON.stringify({ api_key: 'mock-dev-payment-api-key' }),
+          settings: JSON.stringify({ provider: 'iAccess' }),
+          error_count: 0,
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'iAccess Payments connected successfully',
+      });
+    } catch (error: any) {
+      console.error('Payment connect error:', error.message);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to connect Payments',
+      });
+    }
   }
 
   /**
    * POST /api/integrations/:id/sync
    */
   public async triggerSync(req: AuthenticatedRequest, res: Response) {
-    // TODO: Enqueue full or delta sync job via pg-boss
-    res.json({
-      success: true,
-      message: 'Sync triggered',
-    });
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const franchiseId = user.franchiseId;
+      if (!franchiseId) {
+        return res.status(400).json({ success: false, error: 'User is not associated with a franchise' });
+      }
+
+      const { id } = req.params;
+      const db = getDatabase();
+      const config = await db('integration_configs')
+        .where({ id, franchise_id: franchiseId })
+        .first();
+
+      if (!config) {
+        return res.status(404).json({ success: false, error: 'Integration config not found' });
+      }
+
+      // Push job to pg-boss queue
+      const { queue } = require('../../../shared/queue');
+      await queue.send('integration/sync', { 
+        integrationId: config.id, 
+        franchiseId: config.franchise_id, 
+        type: config.type, 
+        syncType: 'full' 
+      }, { priority: 1, retryBackoff: true, retryLimit: 5, deadLetter: 'integration/dlq' });
+
+      res.json({
+        success: true,
+        message: 'Sync triggered',
+      });
+    } catch (error: any) {
+      console.error('Trigger sync error:', error.message);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to trigger sync',
+      });
+    }
   }
 
   /**
    * POST /api/integrations/webhooks/clover
    */
   public async handleCloverWebhook(req: Request, res: Response) {
-    await webhookReceiver.handleCloverWebhook(req);
-    res.status(200).send('OK');
+    const verificationCode = req.query.verificationCode || req.body?.verificationCode;
+    if (verificationCode) {
+      console.log('Received Clover webhook verification challenge:', verificationCode);
+      return res.status(200).send(verificationCode);
+    }
+
+    try {
+      await webhookReceiver.handleCloverWebhook(req);
+      res.status(200).send('OK');
+    } catch (error: any) {
+      console.error('Error processing Clover webhook:', error.message);
+      res.status(400).send(error.message || 'Webhook processing failed');
+    }
   }
 
   /**

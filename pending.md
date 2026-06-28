@@ -12,4 +12,10 @@ This document tracks technical debt, delayed implementations, and tasks that nee
 - [ ] **JWT & Token Management (ID4)**: Access/refresh token flows.
 - [ ] **Implementation of PostgreSQL in Authentication**: Ensure the auth system is properly wired to use PostgreSQL for storing and verifying credentials.
 
+## Clover POS Integration
+- [ ] **Production Link Update**: Update the redirect URLs in the live Clover Developer Account.
+  - **Site URL**: `https://f3-fintech-for-franchises-frontend.vercel.app`
+  - **Redirect URL**: `https://<YOUR_BACKEND_URL>/api/integrations/clover/callback` (or the single-domain Vercel path if serverless).
+
 *(Add new pending tasks here as they arise)*
+

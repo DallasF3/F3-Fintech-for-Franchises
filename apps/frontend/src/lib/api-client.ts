@@ -310,6 +310,12 @@ class ApiClient {
     });
   }
 
+  async connectPayment(): Promise<ApiResponse<any>> {
+    return this.request('/api/integrations/payment/connect', {
+      method: 'POST',
+    });
+  }
+
   async triggerSync(integrationId: string): Promise<ApiResponse<{ message: string }>> {
     return this.request(`/api/integrations/${integrationId}/sync`, {
       method: 'POST',
