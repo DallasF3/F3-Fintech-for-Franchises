@@ -12,7 +12,7 @@ const integrationOptions = [
   { id: 'square', name: 'Square POS', type: 'Point of Sale', icon: Monitor, color: 'text-gray-900', bg: 'bg-gray-100' },
   { id: 'clover', name: 'Clover POS', type: 'Point of Sale', icon: Monitor, color: 'text-blue-500', bg: 'bg-blue-50' },
   { id: 'payment', name: 'iAccess Payments', type: 'Payment Processor', icon: CreditCard, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-  { id: 'crm', name: 'Universal CRM', type: 'Customer Data & Loyalty', icon: Users, color: 'text-purple-500', bg: 'bg-purple-50' },
+  { id: 'hubspot', name: 'HubSpot CRM', type: 'Customer Data & Loyalty', icon: Users, color: 'text-[#ff7a59]', bg: 'bg-orange-50' },
 ];
 
 export default function SetupIntegrationPage() {
@@ -60,12 +60,14 @@ export default function SetupIntegrationPage() {
           setError(response.error || 'Failed to generate Square URL');
           setStep(2);
         }
-      } else if (selected === 'crm') {
-        const response = await apiClient.connectCrm();
-        if (response.success) {
-          router.push('/dashboard/integrations?connected=crm');
+      } else if (selected === 'hubspot') {
+        const response = await apiClient.connectHubspot(storeId || null);
+        const redirectUrl = response.data?.redirectUrl || (response as any).redirectUrl;
+        if (response.success && redirectUrl) {
+          window.location.href = redirectUrl;
         } else {
-          setError(response.error || 'Failed to connect CRM');
+          setError(response.error || 'Failed to generate HubSpot URL');
+          setStep(2);
         }
       } else if (selected === 'payment') {
         const response = await apiClient.connectPayment();
@@ -178,7 +180,7 @@ export default function SetupIntegrationPage() {
               </div>
             )}
 
-            {(selected === 'crm' || selected === 'payment') && (
+            {(selected === 'payment') && (
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">API Key</label>
                 <input 
@@ -191,7 +193,7 @@ export default function SetupIntegrationPage() {
               </div>
             )}
 
-            {(selected === 'clover' || selected === 'square') && (
+            {(selected === 'clover' || selected === 'square' || selected === 'hubspot') && (
               <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-sm mb-6">
                 Connecting this POS requires OAuth. Clicking continue will redirect you to the provider to authorize our application.
               </div>

@@ -10,7 +10,7 @@ import { useAuthUser } from '@/components/rbac-guard';
 
 interface Integration {
   id: string;
-  type: 'clover' | 'square' | 'payment' | 'crm';
+  type: 'clover' | 'square' | 'payment' | 'hubspot';
   status: 'connected' | 'disconnected' | 'error';
   store_id: string | null;
   last_sync_at: string | null;
@@ -21,7 +21,7 @@ const SUPPORTED_INTEGRATIONS = [
   { type: 'square', name: 'Square POS', category: 'Point of Sale' },
   { type: 'clover', name: 'Clover POS', category: 'Point of Sale' },
   { type: 'payment', name: 'iAccess Payments', category: 'Payment Processor' },
-  { type: 'crm', name: 'Universal CRM', category: 'Customer Data & Loyalty' },
+  { type: 'hubspot', name: 'HubSpot CRM', category: 'Customer Data & Loyalty' },
 ];
 
 function IntegrationsDashboardContent() {

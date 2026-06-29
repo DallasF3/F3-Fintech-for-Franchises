@@ -7,12 +7,14 @@ const router = Router();
 // ─── OAuth Flows (Protected — requires JWT) ─────────────────
 router.post('/clover/connect', authenticateToken, integrationController.connectClover);
 router.post('/square/connect', authenticateToken, integrationController.connectSquare);
+router.post('/hubspot/connect', authenticateToken, integrationController.connectHubspot);
 router.post('/crm/connect', authenticateToken, integrationController.connectCrm);
 router.post('/payment/connect', authenticateToken, integrationController.connectPayment);
 
 // ─── OAuth Callback (Open — browser redirect from OAuth Providers) ─
 router.get('/clover/callback', integrationController.cloverCallback);
 router.get('/square/callback', integrationController.squareCallback);
+router.get('/hubspot/callback', integrationController.hubspotCallback);
 
 // ─── Integration Management (Protected) ─────────────────────
 router.get('/', authenticateToken, integrationController.listIntegrations);

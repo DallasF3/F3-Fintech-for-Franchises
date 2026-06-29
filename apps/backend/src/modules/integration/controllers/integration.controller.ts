@@ -3,6 +3,7 @@ import { cloverConnector } from '../services/clover.connector';
 import { webhookReceiver } from '../services/webhook-receiver';
 import { CloverOAuthService } from '../services/clover-oauth.service';
 import { SquareOAuthService } from '../services/square-oauth.service';
+import { HubSpotOAuthService } from '../services/hubspot-oauth.service';
 import { AuthenticatedRequest } from '../../../middlewares/authenticate.middleware';
 import { getDatabase } from '../../../shared/database/connection';
 
@@ -45,7 +46,7 @@ export class IntegrationController {
       const storeId = req.body?.store_id || null;
 
       const { authorizationUrl, state } = CloverOAuthService.generateAuthorizationUrl(
-        franchiseId,
+        franchiseId!,
         storeId
       );
 
@@ -217,7 +218,7 @@ export class IntegrationController {
       const storeId = req.body?.store_id || null;
 
       const { authorizationUrl, state } = SquareOAuthService.generateAuthorizationUrl(
-        franchiseId,
+        franchiseId!,
         storeId
       );
 
@@ -318,6 +319,127 @@ export class IntegrationController {
   }
 
   /**
+   * POST /api/integrations/hubspot/connect
+   */
+  public async connectHubspot(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      let franchiseId = user.franchiseId;
+      if (!franchiseId) {
+        const db = getDatabase();
+        const firstFranchise = await db('franchises').first();
+        if (firstFranchise) {
+          franchiseId = firstFranchise.id;
+        } else {
+          return res.status(400).json({ success: false, error: 'No franchise associated.' });
+        }
+      }
+
+      const storeId = req.body?.store_id || null;
+
+      const { authorizationUrl, state } = HubSpotOAuthService.generateAuthorizationUrl(
+        franchiseId!,
+        storeId
+      );
+
+      console.log(`🔗 HubSpot OAuth URL generated for franchise ${franchiseId}`);
+
+      res.json({
+        success: true,
+        data: {
+          redirectUrl: authorizationUrl,
+          state,
+        },
+      });
+    } catch (error: any) {
+      console.error('HubSpot connect error:', error.message);
+      res.status(500).json({ success: false, error: error.message || 'Failed to generate HubSpot URL' });
+    }
+  }
+
+  /**
+   * GET /api/integrations/hubspot/callback
+   */
+  public async hubspotCallback(req: Request, res: Response) {
+    try {
+      const { code, state, error, error_description } = req.query as {
+        code?: string;
+        state?: string;
+        error?: string;
+        error_description?: string;
+      };
+
+      if (error) {
+        return res.status(400).json({ success: false, error: error_description || error });
+      }
+
+      if (!code) {
+        return res.status(400).json({ success: false, error: 'Missing authorization code from HubSpot' });
+      }
+
+      let franchiseId: string;
+      let storeId: string | null = null;
+
+      if (state) {
+        const stateContext = HubSpotOAuthService.validateState(state);
+        if (!stateContext) {
+          return res.status(400).json({ success: false, error: 'Invalid or expired OAuth state.' });
+        }
+        franchiseId = stateContext.franchiseId;
+        storeId = stateContext.storeId;
+      } else {
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(400).json({ success: false, error: 'Missing state parameter.' });
+        }
+        const { getDatabase } = require('../../../shared/database/connection');
+        const db = getDatabase();
+        const firstFranchise = await db('franchises').first();
+        franchiseId = firstFranchise.id;
+      }
+
+      let accessToken: string;
+      let refreshToken: string | undefined;
+      let expiresAt: number | undefined;
+
+      const appId = process.env.HUBSPOT_CLIENT_ID;
+      if (!appId || code.startsWith('mock_')) {
+        accessToken = `simulated-hs-token-${Date.now()}`;
+      } else {
+        const tokenResponse = await HubSpotOAuthService.exchangeCodeForToken(code);
+        accessToken = tokenResponse.access_token;
+        refreshToken = tokenResponse.refresh_token;
+        expiresAt = tokenResponse.expires_in;
+      }
+
+      const { integrationId } = await HubSpotOAuthService.storeCredentials(
+        franchiseId,
+        storeId,
+        accessToken,
+        refreshToken,
+        expiresAt
+      );
+
+      console.log(`✅ HubSpot connected! Integration ID: ${integrationId}`);
+
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const redirectTo = `${frontendUrl}/dashboard/integrations?connected=hubspot&integration_id=${integrationId}`;
+
+      if (req.headers.accept?.includes('application/json')) {
+        return res.json({ success: true, data: { integrationId, status: 'connected' } });
+      }
+
+      res.redirect(redirectTo);
+    } catch (err: any) {
+      console.error('HubSpot callback error:', err.message);
+      res.status(500).json({ success: false, error: err.message || 'HubSpot connection failed' });
+    }
+  }
+
+  /**
    * GET /api/integrations
    * 
    * List all integrations for the authenticated user's franchise.
@@ -341,7 +463,7 @@ export class IntegrationController {
         }
       }
 
-      const integrations = await CloverOAuthService.listIntegrations(franchiseId);
+      const integrations = await CloverOAuthService.listIntegrations(franchiseId!);
 
       res.json({
         success: true,
@@ -603,6 +725,9 @@ export class IntegrationController {
       } else if (config.type === 'square') {
         const { squareConnector } = require('../services/square.connector');
         result = await squareConnector.testConnection(config);
+      } else if (config.type === 'hubspot') {
+        const { hubspotConnector } = require('../services/hubspot.connector');
+        result = await hubspotConnector.testConnection(config);
       } else {
         return res.status(400).json({ success: false, error: 'Unknown integration type' });
       }
