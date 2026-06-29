@@ -4,11 +4,12 @@ import { getDatabase } from '../../../shared/database/connection';
 import { cloverConnector } from '../services/clover.connector';
 import { crmConnector } from '../services/crm.connector';
 import { paymentConnector } from '../services/payment.connector';
+import { squareConnector } from '../services/square.connector';
 
 export interface SyncJobData {
   integrationId: string;
   franchiseId: string;
-  type: 'clover' | 'crm' | 'payment';
+  type: 'clover' | 'crm' | 'payment' | 'square';
   syncType: 'full' | 'delta' | 'webhook' | 'manual';
 }
 
@@ -69,6 +70,9 @@ export async function initializeSyncWorker() {
             break;
           case 'payment':
             result = await paymentConnector.fullSync(config, { batchSize: 100 });
+            break;
+          case 'square':
+            result = await squareConnector.fullSync(config, { batchSize: 100 });
             break;
           default:
             throw new Error(`Unsupported integration type: ${data.type}`);

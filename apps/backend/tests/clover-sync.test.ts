@@ -96,6 +96,7 @@ describe('Clover POS Connector Ingestion & Sync', () => {
     jest.spyOn(CloverOAuthService, 'getDecryptedToken').mockResolvedValue({
       accessToken: 'mock-access-token',
       merchantId: 'mock-merchant-id',
+      refreshToken: 'mock-refresh-token',
     });
   });
 

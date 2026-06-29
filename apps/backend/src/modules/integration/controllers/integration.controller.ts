@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { cloverConnector } from '../services/clover.connector';
 import { webhookReceiver } from '../services/webhook-receiver';
 import { CloverOAuthService } from '../services/clover-oauth.service';
+import { SquareOAuthService } from '../services/square-oauth.service';
 import { AuthenticatedRequest } from '../../../middlewares/authenticate.middleware';
 import { getDatabase } from '../../../shared/database/connection';
 
@@ -131,6 +132,8 @@ export class IntegrationController {
 
       // Exchange code for access token
       let accessToken: string;
+      let refreshToken: string | undefined;
+      let expiration: number | undefined;
       const appId = process.env.CLOVER_APP_ID;
 
       if (!appId || code.startsWith('mock_')) {
@@ -140,6 +143,8 @@ export class IntegrationController {
       } else {
         const tokenResponse = await CloverOAuthService.exchangeCodeForToken(code);
         accessToken = tokenResponse.access_token;
+        refreshToken = tokenResponse.refresh_token;
+        expiration = tokenResponse.access_token_expiration;
       }
 
       // Store encrypted credentials
@@ -147,7 +152,9 @@ export class IntegrationController {
         franchiseId,
         storeId,
         merchant_id,
-        accessToken
+        accessToken,
+        refreshToken,
+        expiration
       );
 
       console.log(`✅ Clover connected! Integration ID: ${integrationId}, Merchant: ${merchant_id}`);
@@ -177,6 +184,124 @@ export class IntegrationController {
         success: false,
         error: error.message || 'Failed to complete Clover connection',
       });
+    }
+  }
+
+  /**
+   * POST /api/integrations/square/connect
+   */
+  public async connectSquare(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const franchiseId = user.franchiseId;
+      if (!franchiseId) {
+        return res.status(400).json({ success: false, error: 'No franchise associated.' });
+      }
+
+      const storeId = req.body?.store_id || null;
+
+      const { authorizationUrl, state } = SquareOAuthService.generateAuthorizationUrl(
+        franchiseId,
+        storeId
+      );
+
+      console.log(`🔗 Square OAuth URL generated for franchise ${franchiseId}`);
+
+      res.json({
+        success: true,
+        data: {
+          redirectUrl: authorizationUrl,
+          state,
+        },
+      });
+    } catch (error: any) {
+      console.error('Square connect error:', error.message);
+      res.status(500).json({ success: false, error: error.message || 'Failed to generate Square URL' });
+    }
+  }
+
+  /**
+   * GET /api/integrations/square/callback
+   */
+  public async squareCallback(req: Request, res: Response) {
+    try {
+      const { code, state, error, error_description } = req.query as {
+        code?: string;
+        state?: string;
+        error?: string;
+        error_description?: string;
+      };
+
+      if (error) {
+        return res.status(400).json({ success: false, error: error_description || error });
+      }
+
+      if (!code) {
+        return res.status(400).json({ success: false, error: 'Missing authorization code from Square' });
+      }
+
+      let franchiseId: string;
+      let storeId: string | null = null;
+
+      if (state) {
+        const stateContext = SquareOAuthService.validateState(state);
+        if (!stateContext) {
+          return res.status(400).json({ success: false, error: 'Invalid or expired OAuth state.' });
+        }
+        franchiseId = stateContext.franchiseId;
+        storeId = stateContext.storeId;
+      } else {
+        if (process.env.NODE_ENV === 'production') {
+          return res.status(400).json({ success: false, error: 'Missing state parameter.' });
+        }
+        const { getDatabase } = require('../../../shared/database/connection');
+        const db = getDatabase();
+        const firstFranchise = await db('franchises').first();
+        franchiseId = firstFranchise.id;
+      }
+
+      let accessToken: string;
+      let refreshToken: string | undefined;
+      let expiresAt: string | undefined;
+      let merchantId: string = 'mock-merchant-id';
+
+      const appId = process.env.SQUARE_APP_ID;
+      if (!appId || code.startsWith('mock_')) {
+        accessToken = `simulated-sq-token-${Date.now()}`;
+      } else {
+        const tokenResponse = await SquareOAuthService.exchangeCodeForToken(code);
+        accessToken = tokenResponse.access_token;
+        refreshToken = tokenResponse.refresh_token;
+        expiresAt = tokenResponse.expires_at;
+        merchantId = tokenResponse.merchant_id;
+      }
+
+      const { integrationId } = await SquareOAuthService.storeCredentials(
+        franchiseId,
+        storeId,
+        merchantId,
+        accessToken,
+        refreshToken,
+        expiresAt
+      );
+
+      console.log(`✅ Square connected! Integration ID: ${integrationId}`);
+
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      const redirectTo = `${frontendUrl}/dashboard/integrations?connected=square&integration_id=${integrationId}`;
+
+      if (req.headers.accept?.includes('application/json')) {
+        return res.json({ success: true, data: { integrationId, status: 'connected' } });
+      }
+
+      res.redirect(redirectTo);
+    } catch (err: any) {
+      console.error('Square callback error:', err.message);
+      res.status(500).json({ success: false, error: err.message || 'Square connection failed' });
     }
   }
 
@@ -371,6 +496,160 @@ export class IntegrationController {
       res.status(500).json({
         success: false,
         error: 'Failed to trigger sync',
+      });
+    }
+  }
+
+  /**
+   * GET /api/integrations/:id/history
+   */
+  public async getHistory(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const franchiseId = user.franchiseId;
+      if (!franchiseId) {
+        return res.status(400).json({ success: false, error: 'User is not associated with a franchise' });
+      }
+
+      const { id } = req.params;
+      const db = getDatabase();
+
+      // Check RBAC: Make sure this integration belongs to the user's franchise
+      const config = await db('integration_configs')
+        .where({ id, franchise_id: franchiseId })
+        .first();
+
+      if (!config) {
+        return res.status(404).json({ success: false, error: 'Integration config not found' });
+      }
+
+      const history = await db('sync_runs')
+        .where({ integration_id: id })
+        .orderBy('created_at', 'desc')
+        .limit(100);
+
+      res.json({
+        success: true,
+        data: history,
+      });
+    } catch (error: any) {
+      console.error('Get history error:', error.message);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch sync history',
+      });
+    }
+  }
+
+  /**
+   * POST /api/integrations/:id/test
+   */
+  public async testIntegration(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const franchiseId = user.franchiseId;
+      if (!franchiseId) {
+        return res.status(400).json({ success: false, error: 'User is not associated with a franchise' });
+      }
+
+      const { id } = req.params;
+      const db = getDatabase();
+      
+      const config = await db('integration_configs')
+        .where({ id, franchise_id: franchiseId })
+        .first();
+
+      if (!config) {
+        return res.status(404).json({ success: false, error: 'Integration config not found' });
+      }
+
+      let result;
+      // Depending on config type, test the connection
+      if (config.type === 'clover') {
+        const { cloverConnector } = require('../services/clover.connector');
+        result = await cloverConnector.testConnection(config);
+      } else if (config.type === 'crm') {
+        const { crmConnector } = require('../services/crm.connector');
+        result = await crmConnector.testConnection(config);
+      } else if (config.type === 'payment') {
+        const { paymentConnector } = require('../services/payment.connector');
+        result = await paymentConnector.testConnection(config);
+      } else if (config.type === 'square') {
+        const { squareConnector } = require('../services/square.connector');
+        result = await squareConnector.testConnection(config);
+      } else {
+        return res.status(400).json({ success: false, error: 'Unknown integration type' });
+      }
+
+      if (result?.success) {
+        await db('integration_configs').where({ id }).update({
+          status: 'connected',
+          last_error: null,
+          error_count: 0
+        });
+      } else {
+        await db('integration_configs').where({ id }).update({
+          status: 'error',
+          last_error: result?.error || 'Test failed'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      console.error('Test integration error:', error.message);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to test integration',
+      });
+    }
+  }
+
+  /**
+   * DELETE /api/integrations/:id
+   */
+  public async disconnectIntegration(req: AuthenticatedRequest, res: Response) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ success: false, error: 'Authentication required' });
+      }
+
+      const franchiseId = user.franchiseId;
+      if (!franchiseId) {
+        return res.status(400).json({ success: false, error: 'User is not associated with a franchise' });
+      }
+
+      const { id } = req.params;
+      const db = getDatabase();
+      
+      const deletedCount = await db('integration_configs')
+        .where({ id, franchise_id: franchiseId })
+        .del();
+
+      if (deletedCount === 0) {
+        return res.status(404).json({ success: false, error: 'Integration config not found' });
+      }
+
+      res.json({
+        success: true,
+        message: 'Integration disconnected successfully',
+      });
+    } catch (error: any) {
+      console.error('Disconnect integration error:', error.message);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to disconnect integration',
       });
     }
   }

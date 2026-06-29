@@ -304,6 +304,13 @@ class ApiClient {
     });
   }
 
+  async connectSquare(storeId?: string | null): Promise<ApiResponse<{ redirectUrl: string; state: string }>> {
+    return this.request('/api/integrations/square/connect', {
+      method: 'POST',
+      body: JSON.stringify({ store_id: storeId }),
+    });
+  }
+
   async connectCrm(): Promise<ApiResponse<any>> {
     return this.request('/api/integrations/crm/connect', {
       method: 'POST',
@@ -319,6 +326,24 @@ class ApiClient {
   async triggerSync(integrationId: string): Promise<ApiResponse<{ message: string }>> {
     return this.request(`/api/integrations/${integrationId}/sync`, {
       method: 'POST',
+    });
+  }
+
+  async getSyncHistory(integrationId: string): Promise<ApiResponse<any[]>> {
+    return this.request(`/api/integrations/${integrationId}/history`, {
+      method: 'GET',
+    });
+  }
+
+  async testIntegration(integrationId: string): Promise<ApiResponse<any>> {
+    return this.request(`/api/integrations/${integrationId}/test`, {
+      method: 'POST',
+    });
+  }
+
+  async disconnectIntegration(integrationId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request(`/api/integrations/${integrationId}`, {
+      method: 'DELETE',
     });
   }
 }

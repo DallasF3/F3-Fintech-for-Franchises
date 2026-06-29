@@ -133,6 +133,8 @@ export class CloverOAuthService {
    */
   static async exchangeCodeForToken(code: string): Promise<{
     access_token: string;
+    refresh_token?: string;
+    access_token_expiration?: number;
   }> {
     const baseUrl = this.getBaseUrl();
     const appId = this.getAppId();
@@ -158,7 +160,11 @@ export class CloverOAuthService {
         throw new Error('Clover OAuth response did not contain an access_token');
       }
 
-      return { access_token: response.data.access_token };
+      return { 
+        access_token: response.data.access_token,
+        refresh_token: response.data.refresh_token,
+        access_token_expiration: response.data.access_token_expiration 
+      };
     } catch (error: any) {
       if (error.response) {
         throw new Error(
@@ -182,16 +188,21 @@ export class CloverOAuthService {
     franchiseId: string,
     storeId: string | null,
     merchantId: string,
-    accessToken: string
+    accessToken: string,
+    refreshToken?: string,
+    expiration?: number
   ): Promise<{ integrationId: string }> {
     const db = getDatabase();
 
     // Encrypt the access token
     const encryptedToken = EncryptionService.encrypt(accessToken);
+    const encryptedRefreshToken = refreshToken ? EncryptionService.encrypt(refreshToken) : null;
 
     const credentials = {
       merchant_id: merchantId,           // Not a secret — stored in plaintext
       access_token: encryptedToken,       // Encrypted with AES-256-GCM
+      refresh_token: encryptedRefreshToken,
+      expiration,
       connected_at: new Date().toISOString(),
     };
 
@@ -253,6 +264,7 @@ export class CloverOAuthService {
   static async getDecryptedToken(integrationId: string): Promise<{
     accessToken: string;
     merchantId: string;
+    refreshToken: string | null;
   }> {
     const db = getDatabase();
     const config = await db('integration_configs')
@@ -268,11 +280,68 @@ export class CloverOAuthService {
       : config.credentials;
 
     const accessToken = EncryptionService.decrypt(credentials.access_token);
+    const refreshToken = credentials.refresh_token ? EncryptionService.decrypt(credentials.refresh_token) : null;
 
     return {
       accessToken,
       merchantId: credentials.merchant_id,
+      refreshToken,
     };
+  }
+
+  // ─── Step 5: Refresh Token ──────────────────────
+
+  static async refreshAccessToken(integrationId: string): Promise<string> {
+    const { refreshToken, merchantId } = await this.getDecryptedToken(integrationId);
+    if (!refreshToken) {
+      throw new Error(`Integration ${integrationId} does not have a refresh token`);
+    }
+
+    const baseUrl = this.getBaseUrl();
+    const appId = this.getAppId();
+    const appSecret = this.getAppSecret();
+
+    try {
+      const response = await axios.post(`${baseUrl}/oauth/token`, null, {
+        params: {
+          client_id: appId,
+          client_secret: appSecret,
+          refresh_token: refreshToken,
+          grant_type: 'refresh_token',
+        },
+        timeout: 10000,
+      });
+
+      if (!response.data?.access_token) {
+        throw new Error('Clover OAuth refresh response did not contain an access_token');
+      }
+
+      const db = getDatabase();
+      const config = await db('integration_configs').where({ id: integrationId }).first();
+      
+      const newCredentials = {
+        ...(typeof config.credentials === 'string' ? JSON.parse(config.credentials) : config.credentials),
+        access_token: EncryptionService.encrypt(response.data.access_token),
+      };
+
+      if (response.data.refresh_token) {
+         newCredentials.refresh_token = EncryptionService.encrypt(response.data.refresh_token);
+      }
+      if (response.data.access_token_expiration) {
+         newCredentials.expiration = response.data.access_token_expiration;
+      }
+
+      await db('integration_configs')
+        .where({ id: integrationId })
+        .update({
+          credentials: JSON.stringify(newCredentials),
+          updated_at: new Date(),
+        });
+
+      return response.data.access_token;
+    } catch (error: any) {
+      throw new Error(`Clover OAuth token refresh failed: ${error.message}`);
+    }
   }
 
   // ─── Helper: List Integrations for Franchise ──────────────────

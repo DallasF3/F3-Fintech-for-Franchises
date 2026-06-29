@@ -1,7 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { getDatabase } from '../../../shared/database/connection';
-import { CloverOAuthService } from './clover-oauth.service';
-import { CloverNormalizer } from './clover.normalizer';
+import { SquareNormalizer } from './square.normalizer';
 import {
   IConnector,
   IntegrationConfig,
@@ -11,24 +10,24 @@ import {
   ConnectionTestResult,
 } from '../types';
 
-export class CloverConnector implements IConnector {
-  public readonly type = 'clover';
+export class SquareConnector implements IConnector {
+  public readonly type = 'square';
   
   private static getApiBaseUrl(): string {
-    const env = process.env.CLOVER_ENVIRONMENT || 'sandbox';
+    const env = process.env.SQUARE_ENVIRONMENT || 'sandbox';
     return env === 'production'
-      ? 'https://api.clover.com/v3'
-      : 'https://sandbox.dev.clover.com/v3';
+      ? 'https://connect.squareup.com/v2'
+      : 'https://connect.squareupsandbox.com/v2';
   }
   
-  // Rate limiting delay: 16 requests per second = ~62.5ms per request. Use 65ms for safety.
+  // Rate limiting delay
   private async rateLimitDelay() {
-    return new Promise((resolve) => setTimeout(resolve, 65));
+    return new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   private getClient(accessToken: string): AxiosInstance {
     return axios.create({
-      baseURL: CloverConnector.getApiBaseUrl(),
+      baseURL: SquareConnector.getApiBaseUrl(),
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
@@ -40,49 +39,27 @@ export class CloverConnector implements IConnector {
     client: AxiosInstance,
     endpoint: string,
     params: Record<string, any> = {},
-    integrationId: string
+    dataKey: string
   ): Promise<any[]> {
     let allElements: any[] = [];
-    const limit = 100;
-    let offset = 0;
+    let cursor: string | undefined = undefined;
     let hasMore = true;
 
     while (hasMore) {
       await this.rateLimitDelay();
       try {
-        const response = await client.get(endpoint, {
-          params: {
-            ...params,
-            limit,
-            offset,
-          },
-        });
+        const currentParams: Record<string, any> = cursor ? { ...params, cursor } : params;
+        const response: any = await client.get(endpoint, { params: currentParams });
 
-        const elements = response.data?.elements || [];
+        const elements = response.data?.[dataKey] || [];
         allElements = allElements.concat(elements);
         
-        if (elements.length < limit) {
+        cursor = response.data?.cursor;
+        if (!cursor) {
           hasMore = false;
-        } else {
-          offset += limit;
         }
       } catch (error: any) {
-        if (error.response?.status === 401) {
-          console.log(`[Clover] 401 Unauthorized for ${endpoint}. Attempting token refresh...`);
-          const newAccessToken = await CloverOAuthService.refreshAccessToken(integrationId);
-          client.defaults.headers['Authorization'] = `Bearer ${newAccessToken}`;
-          // Retry immediately this loop iteration
-          continue;
-        }
-        if (error.response?.status === 429) {
-          console.warn(`[Clover] 429 Rate Limit Hit for ${endpoint}. Backing off...`);
-          const retryAfter = error.response.headers['retry-after'];
-          const delayMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 2000;
-          await new Promise(res => setTimeout(res, delayMs));
-          continue;
-        }
-        
-        console.error(`Error in Clover fetchPaginated for ${endpoint}:`, error.message);
+        console.error(`Error in Square fetchPaginated for ${endpoint}:`, error.message);
         throw error;
       }
     }
@@ -93,15 +70,19 @@ export class CloverConnector implements IConnector {
   public async testConnection(config: IntegrationConfig): Promise<ConnectionTestResult> {
     const startTime = Date.now();
     try {
-      const { accessToken, merchantId } = await CloverOAuthService.getDecryptedToken(config.id);
+      const accessToken = config.credentials?.access_token;
+      if (!accessToken) throw new Error('Missing Square Access Token');
+      
       const client = this.getClient(accessToken);
       
       await this.rateLimitDelay();
-      const response = await client.get(`/merchants/${merchantId}`);
+      // /v2/locations is a good health check endpoint
+      const response = await client.get(`/locations`);
+      const locationName = response.data?.locations?.[0]?.name || 'Square Account';
       
       return {
         success: true,
-        merchantName: response.data.name,
+        merchantName: locationName,
         latencyMs: Date.now() - startTime,
       };
     } catch (error: any) {
@@ -133,23 +114,31 @@ export class CloverConnector implements IConnector {
     };
 
     try {
-      const { accessToken, merchantId } = await CloverOAuthService.getDecryptedToken(config.id);
+      const accessToken = config.credentials?.access_token;
+      if (!accessToken) throw new Error('Missing Square Access Token');
+
       const client = this.getClient(accessToken);
       
-      // Determine sync filters
-      const sinceTime = options.since ? options.since.getTime() : null;
-      const filterParams: Record<string, any> = {};
+      const sinceTime = options.since ? options.since.toISOString() : null;
       
       // 1. Sync Customers
       let customerParams: Record<string, any> = {};
       if (sinceTime) {
-        customerParams.filter = `clientModifiedTime>=${sinceTime}`;
+        customerParams.begin_time = sinceTime; // Square uses begin_time for filtering creation/updates in some search APIs, but for /v2/customers it might need SearchCustomers API.
+        // For simplicity using GET /v2/customers, it may not support begin_time directly via query params.
+        // A production app would use POST /v2/customers/search.
       }
       
-      const rawCustomers = await this.fetchPaginated(client, `/merchants/${merchantId}/customers`, customerParams, config.id);
+      const rawCustomers = await this.fetchPaginated(client, `/customers`, {}, 'customers');
+      
       for (const rawCustomer of rawCustomers) {
+        // Only process delta logic manually if SearchCustomers API isn't used
+        if (sinceTime && new Date(rawCustomer.updated_at) < new Date(sinceTime)) {
+          continue; 
+        }
+
         try {
-          const normalized = CloverNormalizer.normalizeCustomer(rawCustomer, config.franchise_id, config.store_id);
+          const normalized = SquareNormalizer.normalizeCustomer(rawCustomer, config.franchise_id, config.store_id || undefined);
           
           const existing = await db('customers')
             .where({ franchise_id: config.franchise_id, clover_id: rawCustomer.id })
@@ -172,19 +161,21 @@ export class CloverConnector implements IConnector {
         }
       }
 
-      // 2. Sync Transactions (Payments)
-      let paymentParams: Record<string, any> = { expand: 'cardTransaction,tender' };
+      // 2. Sync Orders (Transactions)
+      // Square transactions are typically fetched via POST /v2/orders/search
+      // But for this connector, let's assume we can fetch basic payments
+      let paymentParams: Record<string, any> = {};
       if (sinceTime) {
-        paymentParams.filter = `createdTime>=${sinceTime}`;
+        paymentParams.begin_time = sinceTime;
       }
 
-      const rawPayments = await this.fetchPaginated(client, `/merchants/${merchantId}/payments`, paymentParams, config.id);
+      const rawPayments = await this.fetchPaginated(client, `/payments`, paymentParams, 'payments');
       for (const rawPayment of rawPayments) {
         try {
           let dbCustomerId: string | null = null;
-          if (rawPayment.customer?.id) {
+          if (rawPayment.customer_id) {
             const dbCust = await db('customers')
-              .where({ franchise_id: config.franchise_id, clover_id: rawPayment.customer.id })
+              .where({ franchise_id: config.franchise_id, clover_id: rawPayment.customer_id })
               .first();
             if (dbCust) {
               dbCustomerId = dbCust.id;
@@ -200,7 +191,7 @@ export class CloverConnector implements IConnector {
             storeId = firstStore.id;
           }
 
-          const normalized = CloverNormalizer.normalizeTransaction(rawPayment, storeId!, dbCustomerId);
+          const normalized = SquareNormalizer.normalizeTransaction(rawPayment, storeId!, dbCustomerId);
 
           const existing = await db('transactions')
             .where({ store_id: storeId, clover_id: rawPayment.id })
@@ -226,10 +217,10 @@ export class CloverConnector implements IConnector {
       // 3. Sync Refunds
       let refundParams: Record<string, any> = {};
       if (sinceTime) {
-        refundParams.filter = `createdTime>=${sinceTime}`;
+        refundParams.begin_time = sinceTime;
       }
 
-      const rawRefunds = await this.fetchPaginated(client, `/merchants/${merchantId}/refunds`, refundParams, config.id);
+      const rawRefunds = await this.fetchPaginated(client, `/refunds`, refundParams, 'refunds');
       for (const rawRefund of rawRefunds) {
         try {
           let storeId = config.store_id;
@@ -241,17 +232,17 @@ export class CloverConnector implements IConnector {
             storeId = firstStore.id;
           }
 
-          const paymentCloverId = rawRefund.payment?.id;
-          if (!paymentCloverId) {
+          const paymentId = rawRefund.payment_id;
+          if (!paymentId) {
             throw new Error(`Refund ${rawRefund.id} has no associated payment`);
           }
 
-          const dbTx = await db('transactions').where({ store_id: storeId, clover_id: paymentCloverId }).first();
+          const dbTx = await db('transactions').where({ store_id: storeId, clover_id: paymentId }).first();
           if (!dbTx) {
-            throw new Error(`Transaction with Clover ID ${paymentCloverId} not found in DB. Cannot sync refund.`);
+            throw new Error(`Transaction with Square ID ${paymentId} not found in DB. Cannot sync refund.`);
           }
 
-          const normalized = CloverNormalizer.normalizeRefund(rawRefund, dbTx.id, storeId!, dbTx.customer_id);
+          const normalized = SquareNormalizer.normalizeRefund(rawRefund, dbTx.id, storeId!, dbTx.customer_id);
 
           const existing = await db('refunds')
             .where({ store_id: storeId, clover_id: rawRefund.id })
@@ -282,14 +273,12 @@ export class CloverConnector implements IConnector {
   }
 
   public async processWebhook(payload: any, signature: string): Promise<WebhookResult> {
-    // Basic signature verification can be added here
     return {
       success: true,
-      event_type: payload?.event_type || 'unknown',
+      event_type: payload?.type || 'unknown',
       recordsProcessed: 1,
     };
   }
 }
 
-export const cloverConnector = new CloverConnector();
-
+export const squareConnector = new SquareConnector();

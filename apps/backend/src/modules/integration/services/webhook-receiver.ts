@@ -95,12 +95,44 @@ export class WebhookReceiver {
       const firstFranchise = await db('franchises').first();
       
       if (firstFranchise) {
-        const inserted = await db('customers').insert({
-          ...normalizedData,
-          franchise_id: firstFranchise.id
-        }).returning('*');
-        console.log('✅ Successfully inserted customer into Supabase "customers" table!');
-        console.log('   Inserted row:', JSON.stringify(inserted[0], null, 2));
+        let existingCustomer = null;
+        
+        // 1. Try finding by CRM ID first
+        if (normalizedData.crm_id) {
+          existingCustomer = await db('customers')
+            .where({ franchise_id: firstFranchise.id, crm_id: normalizedData.crm_id })
+            .first();
+        }
+        
+        // 2. Fallback to finding by Email
+        if (!existingCustomer && normalizedData.email) {
+          existingCustomer = await db('customers')
+            .where({ franchise_id: firstFranchise.id, email: normalizedData.email })
+            .first();
+        }
+
+        let savedCustomer;
+        
+        if (existingCustomer) {
+          const [updated] = await db('customers')
+            .where({ id: existingCustomer.id })
+            .update({
+              ...normalizedData,
+              updated_at: db.fn.now()
+            })
+            .returning('*');
+          savedCustomer = updated;
+          console.log('✅ Successfully updated existing customer in Supabase "customers" table!');
+        } else {
+          const [inserted] = await db('customers').insert({
+            ...normalizedData,
+            franchise_id: firstFranchise.id
+          }).returning('*');
+          savedCustomer = inserted;
+          console.log('✅ Successfully inserted new customer into Supabase "customers" table!');
+        }
+        
+        console.log('   Saved row:', JSON.stringify(savedCustomer, null, 2));
       } else {
         console.log('⚠️ Could not insert: No franchises exist in the DB to attach the customer to.');
         console.log('   Please ensure you have at least one franchise in the "franchises" table.');
