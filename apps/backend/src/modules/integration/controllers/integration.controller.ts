@@ -28,12 +28,18 @@ export class IntegrationController {
         return res.status(401).json({ success: false, error: 'Authentication required' });
       }
 
-      const franchiseId = user.franchiseId;
+      let franchiseId = user.franchiseId;
       if (!franchiseId) {
-        return res.status(400).json({
-          success: false,
-          error: 'No franchise associated with your account. Contact your administrator.',
-        });
+        const db = getDatabase();
+        const firstFranchise = await db('franchises').first();
+        if (firstFranchise) {
+          franchiseId = firstFranchise.id;
+        } else {
+          return res.status(400).json({
+            success: false,
+            error: 'No franchise associated with your account. Contact your administrator.',
+          });
+        }
       }
 
       const storeId = req.body?.store_id || null;
@@ -197,9 +203,15 @@ export class IntegrationController {
         return res.status(401).json({ success: false, error: 'Authentication required' });
       }
 
-      const franchiseId = user.franchiseId;
+      let franchiseId = user.franchiseId;
       if (!franchiseId) {
-        return res.status(400).json({ success: false, error: 'No franchise associated.' });
+        const db = getDatabase();
+        const firstFranchise = await db('franchises').first();
+        if (firstFranchise) {
+          franchiseId = firstFranchise.id;
+        } else {
+          return res.status(400).json({ success: false, error: 'No franchise associated.' });
+        }
       }
 
       const storeId = req.body?.store_id || null;
@@ -318,9 +330,15 @@ export class IntegrationController {
         return res.status(401).json({ success: false, error: 'Authentication required' });
       }
 
-      const franchiseId = user.franchiseId;
+      let franchiseId = user.franchiseId;
       if (!franchiseId) {
-        return res.json({ success: true, data: [] });
+        const db = getDatabase();
+        const firstFranchise = await db('franchises').first();
+        if (firstFranchise) {
+          franchiseId = firstFranchise.id;
+        } else {
+          return res.json({ success: true, data: [] });
+        }
       }
 
       const integrations = await CloverOAuthService.listIntegrations(franchiseId);
