@@ -311,8 +311,8 @@ class ApiClient {
     });
   }
 
-  async connectHubspot(storeId?: string | null): Promise<ApiResponse<{ redirectUrl: string; state: string }>> {
-    return this.request('/api/integrations/hubspot/connect', {
+  async connectSalesforce(storeId?: string | null): Promise<ApiResponse<{ redirectUrl: string; state: string }>> {
+    return this.request('/api/integrations/salesforce/connect', {
       method: 'POST',
       body: JSON.stringify({ store_id: storeId }),
     });

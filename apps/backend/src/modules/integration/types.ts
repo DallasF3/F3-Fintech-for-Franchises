@@ -1,4 +1,4 @@
-export type IntegrationType = 'clover' | 'payment' | 'crm' | 'loyalty' | 'email' | 'sms' | 'square' | 'hubspot';
+export type IntegrationType = 'clover' | 'payment' | 'crm' | 'loyalty' | 'email' | 'sms' | 'square' | 'salesforce';
 export type IntegrationStatus = 'connected' | 'disconnected' | 'error' | 'syncing';
 
 export interface IntegrationConfig {

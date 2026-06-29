@@ -9,7 +9,7 @@ import { apiClient } from '@/lib/api-client';
 
 interface Integration {
   id: string;
-  type: 'clover' | 'square' | 'payment' | 'hubspot';
+  type: 'clover' | 'square' | 'payment' | 'salesforce';
   status: 'connected' | 'disconnected' | 'error';
   store_id: string | null;
   last_sync_at: string | null;
@@ -147,7 +147,7 @@ export default function IntegrationDetailPage({ params }: { params: Promise<{ id
     clover: 'Clover POS',
     square: 'Square POS',
     payment: 'iAccess Payments',
-    hubspot: 'HubSpot CRM'
+    salesforce: 'Salesforce CRM'
   };
 
   const displayName = nameMap[integration.type] || integration.type;

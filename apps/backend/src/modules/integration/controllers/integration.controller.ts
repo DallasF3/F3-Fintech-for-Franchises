@@ -3,7 +3,7 @@ import { cloverConnector } from '../services/clover.connector';
 import { webhookReceiver } from '../services/webhook-receiver';
 import { CloverOAuthService } from '../services/clover-oauth.service';
 import { SquareOAuthService } from '../services/square-oauth.service';
-import { HubSpotOAuthService } from '../services/hubspot-oauth.service';
+import { SalesforceOAuthService } from '../services/salesforce-oauth.service';
 import { AuthenticatedRequest } from '../../../middlewares/authenticate.middleware';
 import { getDatabase } from '../../../shared/database/connection';
 
@@ -319,9 +319,9 @@ export class IntegrationController {
   }
 
   /**
-   * POST /api/integrations/hubspot/connect
+   * POST /api/integrations/salesforce/connect
    */
-  public async connectHubspot(req: AuthenticatedRequest, res: Response) {
+  public async connectSalesforce(req: AuthenticatedRequest, res: Response) {
     try {
       const user = req.user;
       if (!user) {
@@ -341,12 +341,12 @@ export class IntegrationController {
 
       const storeId = req.body?.store_id || null;
 
-      const { authorizationUrl, state } = HubSpotOAuthService.generateAuthorizationUrl(
+      const { authorizationUrl, state } = SalesforceOAuthService.generateAuthorizationUrl(
         franchiseId!,
         storeId
       );
 
-      console.log(`🔗 HubSpot OAuth URL generated for franchise ${franchiseId}`);
+      console.log(`🔗 Salesforce OAuth URL generated for franchise ${franchiseId}`);
 
       res.json({
         success: true,
@@ -356,15 +356,15 @@ export class IntegrationController {
         },
       });
     } catch (error: any) {
-      console.error('HubSpot connect error:', error.message);
-      res.status(500).json({ success: false, error: error.message || 'Failed to generate HubSpot URL' });
+      console.error('Salesforce connect error:', error.message);
+      res.status(500).json({ success: false, error: error.message || 'Failed to generate Salesforce URL' });
     }
   }
 
   /**
-   * GET /api/integrations/hubspot/callback
+   * GET /api/integrations/salesforce/callback
    */
-  public async hubspotCallback(req: Request, res: Response) {
+  public async salesforceCallback(req: Request, res: Response) {
     try {
       const { code, state, error, error_description } = req.query as {
         code?: string;
@@ -378,14 +378,14 @@ export class IntegrationController {
       }
 
       if (!code) {
-        return res.status(400).json({ success: false, error: 'Missing authorization code from HubSpot' });
+        return res.status(400).json({ success: false, error: 'Missing authorization code from Salesforce' });
       }
 
       let franchiseId: string;
       let storeId: string | null = null;
 
       if (state) {
-        const stateContext = HubSpotOAuthService.validateState(state);
+        const stateContext = SalesforceOAuthService.validateState(state);
         if (!stateContext) {
           return res.status(400).json({ success: false, error: 'Invalid or expired OAuth state.' });
         }
@@ -403,30 +403,31 @@ export class IntegrationController {
 
       let accessToken: string;
       let refreshToken: string | undefined;
-      let expiresAt: number | undefined;
+      let instanceUrl: string | undefined;
 
-      const appId = process.env.HUBSPOT_CLIENT_ID;
+      const appId = process.env.SALESFORCE_CLIENT_ID;
       if (!appId || code.startsWith('mock_')) {
-        accessToken = `simulated-hs-token-${Date.now()}`;
+        accessToken = `simulated-sf-token-${Date.now()}`;
+        instanceUrl = 'https://mock.salesforce.com';
       } else {
-        const tokenResponse = await HubSpotOAuthService.exchangeCodeForToken(code);
+        const tokenResponse = await SalesforceOAuthService.exchangeCodeForToken(code);
         accessToken = tokenResponse.access_token;
         refreshToken = tokenResponse.refresh_token;
-        expiresAt = tokenResponse.expires_in;
+        instanceUrl = tokenResponse.instance_url;
       }
 
-      const { integrationId } = await HubSpotOAuthService.storeCredentials(
+      const { integrationId } = await SalesforceOAuthService.storeCredentials(
         franchiseId,
         storeId,
         accessToken,
         refreshToken,
-        expiresAt
+        instanceUrl
       );
 
-      console.log(`✅ HubSpot connected! Integration ID: ${integrationId}`);
+      console.log(`✅ Salesforce connected! Integration ID: ${integrationId}`);
 
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-      const redirectTo = `${frontendUrl}/dashboard/integrations?connected=hubspot&integration_id=${integrationId}`;
+      const redirectTo = `${frontendUrl}/dashboard/integrations?connected=salesforce&integration_id=${integrationId}`;
 
       if (req.headers.accept?.includes('application/json')) {
         return res.json({ success: true, data: { integrationId, status: 'connected' } });
@@ -434,8 +435,8 @@ export class IntegrationController {
 
       res.redirect(redirectTo);
     } catch (err: any) {
-      console.error('HubSpot callback error:', err.message);
-      res.status(500).json({ success: false, error: err.message || 'HubSpot connection failed' });
+      console.error('Salesforce callback error:', err.message);
+      res.status(500).json({ success: false, error: err.message || 'Salesforce connection failed' });
     }
   }
 
@@ -725,9 +726,9 @@ export class IntegrationController {
       } else if (config.type === 'square') {
         const { squareConnector } = require('../services/square.connector');
         result = await squareConnector.testConnection(config);
-      } else if (config.type === 'hubspot') {
-        const { hubspotConnector } = require('../services/hubspot.connector');
-        result = await hubspotConnector.testConnection(config);
+      } else if (config.type === 'salesforce') {
+        const { salesforceConnector } = require('../services/salesforce.connector');
+        result = await salesforceConnector.testConnection(config);
       } else {
         return res.status(400).json({ success: false, error: 'Unknown integration type' });
       }

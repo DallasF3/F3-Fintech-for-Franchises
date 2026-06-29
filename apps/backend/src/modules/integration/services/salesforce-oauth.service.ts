@@ -1,35 +1,29 @@
 import axios from 'axios';
 import { getDatabase } from '../../../shared/database/connection';
 import crypto from 'crypto';
-import { env } from 'process';
 
-export class HubSpotOAuthService {
-  private static readonly CLIENT_ID = process.env.HUBSPOT_CLIENT_ID || '';
-  private static readonly CLIENT_SECRET = process.env.HUBSPOT_CLIENT_SECRET || '';
-  // In production, this must match exactly what is configured in the HubSpot App
+export class SalesforceOAuthService {
+  private static readonly CLIENT_ID = process.env.SALESFORCE_CLIENT_ID || '';
+  private static readonly CLIENT_SECRET = process.env.SALESFORCE_CLIENT_SECRET || '';
   private static readonly REDIRECT_URI = process.env.NODE_ENV === 'production' 
-    ? 'https://backend-production-576e.up.railway.app/api/integrations/hubspot/callback'
-    : 'http://localhost:3001/api/integrations/hubspot/callback';
+    ? 'https://backend-production-576e.up.railway.app/api/integrations/salesforce/callback'
+    : 'http://localhost:3001/api/integrations/salesforce/callback';
   
-  private static readonly SCOPES = 'crm.objects.contacts.read crm.objects.contacts.write';
-
   /**
-   * Generates the OAuth authorization URL for HubSpot.
+   * Generates the OAuth authorization URL for Salesforce.
    */
   static generateAuthorizationUrl(franchiseId: string, storeId: string | null = null): { authorizationUrl: string; state: string } {
-    // Generate a secure state token
     const rawState = JSON.stringify({ franchiseId, storeId, nonce: crypto.randomBytes(16).toString('hex') });
-    // In a real app, you should sign or encrypt this state string to prevent tampering, 
-    // or store the nonce in the DB/session. For simplicity in this PRD, we base64 encode it.
     const state = Buffer.from(rawState).toString('base64');
     
-    // HubSpot OAuth URL
-    const baseUrl = 'https://app.hubspot.com/oauth/authorize';
+    const baseUrl = 'https://login.salesforce.com/services/oauth2/authorize';
     const queryParams = new URLSearchParams({
+      response_type: 'code',
       client_id: this.CLIENT_ID,
       redirect_uri: this.REDIRECT_URI,
-      scope: this.SCOPES,
       state,
+      // 'api' scope allows REST API access, 'refresh_token' allows offline access
+      scope: 'api refresh_token',
     });
 
     return {
@@ -58,7 +52,7 @@ export class HubSpotOAuthService {
    * Exchanges the authorization code for access and refresh tokens.
    */
   static async exchangeCodeForToken(code: string) {
-    const tokenUrl = 'https://api.hubapi.com/oauth/v1/token';
+    const tokenUrl = 'https://login.salesforce.com/services/oauth2/token';
     const params = new URLSearchParams({
       grant_type: 'authorization_code',
       client_id: this.CLIENT_ID,
@@ -77,41 +71,11 @@ export class HubSpotOAuthService {
       return {
         access_token: response.data.access_token,
         refresh_token: response.data.refresh_token,
-        expires_in: response.data.expires_in,
+        instance_url: response.data.instance_url,
       };
     } catch (error: any) {
-      console.error('HubSpot Token Exchange Error:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || 'Failed to exchange HubSpot authorization code');
-    }
-  }
-
-  /**
-   * Refreshes an expired access token using the refresh token.
-   */
-  static async refreshToken(refreshToken: string) {
-    const tokenUrl = 'https://api.hubapi.com/oauth/v1/token';
-    const params = new URLSearchParams({
-      grant_type: 'refresh_token',
-      client_id: this.CLIENT_ID,
-      client_secret: this.CLIENT_SECRET,
-      refresh_token: refreshToken,
-    });
-
-    try {
-      const response = await axios.post(tokenUrl, params.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
-
-      return {
-        access_token: response.data.access_token,
-        refresh_token: response.data.refresh_token,
-        expires_in: response.data.expires_in,
-      };
-    } catch (error: any) {
-      console.error('HubSpot Token Refresh Error:', error.response?.data || error.message);
-      throw new Error(error.response?.data?.message || 'Failed to refresh HubSpot access token');
+      console.error('Salesforce Token Exchange Error:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.error_description || 'Failed to exchange Salesforce authorization code');
     }
   }
 
@@ -123,7 +87,7 @@ export class HubSpotOAuthService {
     storeId: string | null,
     accessToken: string,
     refreshToken?: string,
-    expiresIn?: number
+    instanceUrl?: string
   ) {
     const db = getDatabase();
     
@@ -135,7 +99,6 @@ export class HubSpotOAuthService {
     const rawCredentials = JSON.stringify({
       access_token: accessToken,
       refresh_token: refreshToken,
-      expires_at: expiresIn ? Date.now() + (expiresIn * 1000) : undefined,
     });
 
     let encryptedCredentials = cipher.update(rawCredentials, 'utf8', 'hex');
@@ -148,9 +111,13 @@ export class HubSpotOAuthService {
       tag: authTag,
     });
 
-    // Check if a hubspot config already exists for this franchise
+    // Save instanceUrl in settings as it is required to make API calls
+    const settingsPayload = JSON.stringify({
+      instance_url: instanceUrl,
+    });
+
     const existing = await db('integration_configs')
-      .where({ franchise_id: franchiseId, type: 'hubspot' })
+      .where({ franchise_id: franchiseId, type: 'salesforce' })
       .first();
 
     let integrationId: string;
@@ -162,6 +129,7 @@ export class HubSpotOAuthService {
           status: 'connected',
           store_id: storeId,
           credentials: credentialsPayload,
+          settings: settingsPayload,
           updated_at: new Date(),
         });
       integrationId = existing.id;
@@ -169,9 +137,10 @@ export class HubSpotOAuthService {
       const [newRecord] = await db('integration_configs').insert({
         franchise_id: franchiseId,
         store_id: storeId,
-        type: 'hubspot',
+        type: 'salesforce',
         status: 'connected',
         credentials: credentialsPayload,
+        settings: settingsPayload,
         error_count: 0,
       }).returning('id');
       
